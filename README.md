@@ -16,7 +16,7 @@ Current supported sensors by this Python package include a
 ## Build
 
 <p align="left" width="100%">
-  <img width="75%" src="./img/finished.JPG" alt="build">
+  <img width="75%" src="img/40DB1760-932C-47B8-96B4-398F92D82769_1_105_c.jpeg" alt="build">
 </p>
 
 I've sourced a lot of components from various sites for this build.
@@ -28,7 +28,7 @@ I've sourced a lot of components from various sites for this build.
 This is the second terrarium I've built, following the first (pictured below).
 
 <p align="left" width="100%">
-  <img width="75%" src="./img/first_terrarium.jpeg" alt="first terrarium I built">
+  <img width="75%" src="./img/D9408F09-C330-4E73-A14A-539844C02985_1_105_c.jpeg" alt="first terrarium I built">
 </p>
 
 ## How it works by example
