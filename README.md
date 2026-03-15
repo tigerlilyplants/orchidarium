@@ -1,4 +1,4 @@
-# Orchidarium
+# Orchidarium 🪴
 
 ![GitHub Release](https://img.shields.io/github/v/release/tigerlilyobservatory/orchidarium)
 
@@ -6,12 +6,7 @@
   <img width="20%" src="./img/orchid.png" alt="orchid">
 </p>
 
-A collection of scripts and configuration files for collecting and publishing metrics from USB sensors in an orchid terrarium.
-
-Current supported sensors by this Python package include a
-
-- [Humidity and Temperature sensor](https://www.amazon.com/dp/B08BYLZ3ML?ref=ppx_yo2ov_dt_b_fed_asin_title): a waterproof temperature and humidity sensor.
-- [Soil metrics](https://www.amazon.com/dp/B0FJFK9PPT?ref=ppx_yo2ov_dt_b_fed_asin_title): a sensor for collecting soil analytics.
+*Orchidarium* is a monitoring and control agent designed for terrariums that require precise environmental conditions, particularly high-humidity setups for mini orchids and reptiles. The project leverages key parameters such as humidity, temperature, and lighting while enabling automated control to maintain stable habitat conditions. Its goal is to simplify the management of delicate terrarium ecosystems and help keep both plants and animals thriving with minimal manual intervention.
 
 ## Build
 
@@ -25,11 +20,24 @@ I've sourced a lot of components from various sites for this build.
 - I sourced the large cork bark log [from a seller on Etsy](https://www.etsy.com/listing/1855324948/oversize-cork-rounds-cut-to-length?ref=yr_purchases) who specializes in terrariums.
 - Many of the orchids that have been mounted in the terrarium are from ecuagenera, as well as a number of other retail sellers and auctions. Begonias and other terrestrial plants have been sourced from various sellers on Etsy, including [Botanicaz](https://www.etsy.com/shop/Botanicaz?ref=yr_purchases) and [FloraEpiphytica](https://www.etsy.com/shop/FloraEpiphytica?ref=yr_purchases).
 
-This is the second terrarium I've built, following the first (pictured below).
+### Sensors
 
-<p align="left" width="100%">
-  <img width="75%" src="./img/D9408F09-C330-4E73-A14A-539844C02985_1_105_c.jpeg" alt="first terrarium I built">
-</p>
+Current supported sensors by this Python package include a
+
+- [Humidity and Temperature sensor](https://www.amazon.com/dp/B08BYLZ3ML?ref=ppx_yo2ov_dt_b_fed_asin_title): a waterproof temperature and humidity sensor.
+- [Soil metrics](https://www.amazon.com/dp/B0FJFK9PPT?ref=ppx_yo2ov_dt_b_fed_asin_title): a sensor for collecting soil analytics.
+
+### Previous builds
+
+<details>
+  <summary><b>Show</b></summary>
+
+  This is the second terrarium I've built, following the first (pictured below).
+
+  <p align="left" width="100%">
+    <img width="75%" src="./img/D9408F09-C330-4E73-A14A-539844C02985_1_105_c.jpeg" alt="first terrarium I built">
+  </p>
+</details>
 
 ## How it works by example
 
