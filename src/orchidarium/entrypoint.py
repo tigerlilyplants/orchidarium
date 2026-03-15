@@ -49,17 +49,19 @@ def daemon() -> int:
 
     # Start the healthcheck and other APIs in a separate thread off our main process as a daemon thread.
     _main_process_daemon_threads: List[Thread] = [
-        Thread(
-            target=partial(
-                app.run,
-                port=int(env['HEALTHCHECK_PORT']),
-                debug=bool(env['DEBUG']),
-                use_reloader=False
-            ),
-            # Do not block upon start().
-            daemon=True,
-            name='healthcheck'
-        ),
+        # This needs to be rewritten ~
+        # https://oneuptime.com/blog/post/2025-01-06-python-health-checks-kubernetes/view
+        # Thread(
+        #     target=partial(
+        #         app.run,
+        #         port=int(env['HEALTHCHECK_PORT']),
+        #         debug=bool(env['DEBUG']),
+        #         use_reloader=False
+        #     ),
+        #     # Do not block upon start().
+        #     daemon=True,
+        #     name='healthcheck'
+        # ),
     ]
 
     for _dthread in _main_process_daemon_threads:

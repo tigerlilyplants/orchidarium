@@ -68,6 +68,12 @@ class Sensor(ABC):
 
     @temperature.setter
     def temperature(self, value: float) -> None:
+        """
+        Set the temperature (in Celsius).
+
+        Args:
+            value (float): temperature in Celsius.
+        """
         self._temperature = value
 
     @abstractmethod

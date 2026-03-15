@@ -26,7 +26,7 @@ repos:
     -   id: mixed-line-ending
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.18.2
+    rev: v1.19.1
     hooks:
     -   id: mypy
         args:
@@ -47,7 +47,7 @@ repos:
   #     - id: circleci-config-validate
 
 -   repo: https://github.com/python-poetry/poetry
-    rev: 2.2.1
+    rev: 2.3.2
     hooks:
     -   id: poetry-check
     -   id: poetry-lock
@@ -61,7 +61,7 @@ repos:
 #         -   src
 
 -   repo: https://github.com/abravalheri/validate-pyproject
-    rev: v0.24.1
+    rev: v0.25
     hooks:
     -   id: validate-pyproject
 
@@ -71,7 +71,7 @@ repos:
     -   id: msg-issue-prefix
 
 -   repo: https://github.com/jsh9/pydoclint
-    rev: 0.8.1
+    rev: 0.8.3
     hooks:
     -   id: pydoclint
         args:
