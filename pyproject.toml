@@ -1,13 +1,16 @@
 [tool.poetry]
 name = "orchidarium"
 version = "0.0.1"
-description = "Orchestration and scripts for publishing metrics from sensors in an orchidarium to InfluxDB for Grafana dashboards"
+description = ""
 authors = ["Emma Doyle <emma.ann.doyle@gmail.com>"]
 maintainers = ["Emma Doyle <emma.ann.doyle@gmail.com>"]
 license = "GPL-3.0-or-later"
 readme = "README.md"
 packages = [
-  { include = "orchidarium", from = "src" },
+  { include = "hvac", from = "src" },
+  { include = "controller", from = "src" },
+  { include = "environment", from = "src" },
+  { include = "pins", from = "src" },
 ]
 include = [
   "LICENSE"
@@ -16,7 +19,8 @@ keywords = [
     "python",
     "orchids",
     "plants",
-    "terrarium"
+    "terrarium",
+    "hvac"
 ]
 
 # https://pypi.org/classifiers/
@@ -60,7 +64,18 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-orchidarium = "orchidarium.entrypoint:cli"
+# There are many entrypoints so that we may test each component individually.
+
+# This is the main process package that wraps the 'controller' and 'environment' entrypoints in subprocesses.
+hvac = "hvac.entrypoint:cli"
+
+# Alias entrypoint for the container.
+orchidarium = "hvac.entrypoint:cli"
+
+#
+controller = "controller.entrypoint:cli"
+pins = "pins.entrypoint:cli"
+environment = "environment.entrypoint:cli"
 
 [tool.mypy]
 python_version = "3.11"

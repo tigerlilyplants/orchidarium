@@ -12,7 +12,7 @@ from . import Publisher
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.rest import ApiException
 from influxdb_client.client.write_api import SYNCHRONOUS
-from orchidarium import env
+from environment import env
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:

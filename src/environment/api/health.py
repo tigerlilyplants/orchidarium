@@ -7,9 +7,9 @@ from http import HTTPStatus
 from flask import Response
 from flask import Flask
 from pathlib import Path
-from orchidarium.lib.json import read_json
-from orchidarium.support import sensor_count
-from orchidarium import env
+from environment.lib.json import read_json
+from environment.support import sensor_count
+from environment import env
 
 import logging
 

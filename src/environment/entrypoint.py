@@ -10,15 +10,14 @@ import sys
 import traceback
 
 from typing import TYPE_CHECKING
-from setproctitle import setproctitle
 from time import sleep
 from functools import partial
 from threading import Thread
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from orchidarium.publishers.influxdb import InfluxDBPublisher
-from orchidarium.api import app
-from orchidarium.support import sensor_count, sensor_generator
-from orchidarium import env
+from environment.publishers.influxdb import InfluxDBPublisher
+from environment.api import app
+from environment.support import sensor_count, sensor_generator
+from environment import env
 
 if TYPE_CHECKING:
     from typing import List
@@ -44,8 +43,6 @@ def daemon() -> int:
         int: 0 if successful, 1 or another exit code, otherwise.
     """
     _ret_code = 0
-
-    setproctitle('orchidarium')
 
     # Start the healthcheck and other APIs in a separate thread off our main process as a daemon thread.
     _main_process_daemon_threads: List[Thread] = [

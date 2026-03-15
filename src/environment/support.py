@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-import orchidarium.sensors
+import pins.sensors
 
 from functools import lru_cache
 # from cachetools import TTLCache
@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from typing import Generator, Type
-    from orchidarium.sensors import Sensor
+    from pins.sensors import Sensor
 
 
 @lru_cache(maxsize=1)
@@ -24,8 +24,8 @@ def sensor_count() -> int:
     import inspect
 
     subclasses = []
-    for _, obj in inspect.getmembers(orchidarium.sensors, inspect.isclass):
-        if issubclass(obj, orchidarium.sensors.Sensor) and obj is not orchidarium.sensors.Sensor:
+    for _, obj in inspect.getmembers(pins.sensors, inspect.isclass):
+        if issubclass(obj, pins.sensors.Sensor) and obj is not pins.sensors.Sensor:
             subclasses.append(obj)
     return len(subclasses)
 
@@ -43,6 +43,6 @@ def sensor_generator() -> Generator[Type[Sensor]]:
     Yields:
         Generator[Type[Sensor]]: A list of current Sensor implementation callables.
     """
-    for _, obj in inspect.getmembers(orchidarium.sensors, inspect.isclass):
-        if issubclass(obj, orchidarium.sensors.Sensor) and obj is not orchidarium.sensors.Sensor:
+    for _, obj in inspect.getmembers(pins.sensors, inspect.isclass):
+        if issubclass(obj, pins.sensors.Sensor) and obj is not pins.sensors.Sensor:
             yield obj

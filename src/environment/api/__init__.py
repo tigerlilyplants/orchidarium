@@ -28,7 +28,7 @@ __all__ = [
 ]
 
 
-from orchidarium.api.health import create_healthcheck_api
+from pins.api.health import create_healthcheck_api
 
 
 create_healthcheck_api(app)
