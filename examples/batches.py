@@ -14,6 +14,7 @@ batchsize = 3
 
 def routine(pin: int | str) -> None:
     with DigitalOutputDevice(pin, active_high=False, initial_value=False) as _device:
+        _device.off()
         _device.on()
         _device.is_active
         sleep(1)
