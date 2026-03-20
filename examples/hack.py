@@ -15,3 +15,11 @@ while True:
             sleep(1)
             _device.off()
             _device.is_active
+
+    for pin in reversed(pins):
+        with DigitalOutputDevice(pin, active_high=False, initial_value=False) as _device:
+            _device.on()
+            _device.is_active
+            sleep(1)
+            _device.off()
+            _device.is_active
