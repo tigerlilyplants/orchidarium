@@ -24,22 +24,22 @@ keywords = [
 ]
 
 # https://pypi.org/classifiers/
-# classifiers = [
-#   "Development Status :: 2 - Pre-Alpha",
-#   "Topic :: System :: Monitoring",
-#   "Topic :: System :: Hardware",
-#   "Topic :: System :: Clustering",
-#   "Topic :: System :: Systems Administration",
-#   "Topic :: Utilities",
-#   "Natural Language :: English",
-#   "License :: Other/Proprietary License",
-#   "Programming Language :: Python :: 3 :: Only",
-#   "Programming Language :: Python :: 3.10",
-#   "Programming Language :: Python :: 3.11",
-#   "Programming Language :: Python :: 3.12",
-#   "Intended Audience :: Developers",
-#   "Intended Audience :: System Administrators",
-# ]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Topic :: System :: Monitoring",
+  "Topic :: System :: Hardware",
+  "Topic :: System :: Clustering",
+  "Topic :: System :: Systems Administration",
+  "Topic :: Utilities",
+  "Natural Language :: English",
+  "License :: Other/Proprietary License",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Intended Audience :: Developers",
+  "Intended Audience :: System Administrators",
+]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -51,6 +51,7 @@ bitstring = "^4.3.1"
 setproctitle = "^1.3.7"
 flask-cors = "^6.0.1"
 influxdb-client = {extras = ["ciso"], version = "^1.49.0"}
+gpio = "^1.0"
 # cachetools
 
 [tool.poetry.group.dev.dependencies]
@@ -72,13 +73,13 @@ hvac = "hvac.entrypoint:cli"
 # Alias entrypoint for the container.
 orchidarium = "hvac.entrypoint:cli"
 
-#
+# Control the environment. This includes servos /
 controller = "controller.entrypoint:cli"
 pins = "pins.entrypoint:cli"
 environment = "environment.entrypoint:cli"
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 strict_optional = "true"
 # strict = "true"
 ignore_missing_imports = "true"

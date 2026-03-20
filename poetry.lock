@@ -361,6 +361,18 @@ flask = ">=0.9"
 Werkzeug = ">=0.7"
 
 [[package]]
+name = "gpio"
+version = "1.0.1"
+description = "gpio access via the standard linux sysfs interface"
+optional = false
+python-versions = ">=2.7"
+groups = ["main"]
+files = [
+    {file = "gpio-1.0.1-py3-none-any.whl", hash = "sha256:56e75e24d569048add247085936fc8f8c12324265d78b21293f9fa7e9c199610"},
+    {file = "gpio-1.0.1.tar.gz", hash = "sha256:2deb1dcd8be1b11e61ffe8701cbb32f3a354902467f16a55fd2d7724e5a3d631"},
+]
+
+[[package]]
 name = "identify"
 version = "2.6.15"
 description = "File identification library for Python"
@@ -1098,4 +1110,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "677dad98ba3a47dbbc79420d8900333c753bacb3c2063cad50f773548b5ed24f"
+content-hash = "5f9f87c686fa138ddfc4b2f972658dabe4781b49747800de9385c99f85219313"

@@ -1,0 +1,2 @@
+# https://www.raspberrypi.com/documentation/accessories/touch-display-2.html#device-tree-options
+dtoverlay=vc4-kms-dsi-ili9881-5inch #,invx,invy
