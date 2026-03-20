@@ -24,7 +24,7 @@ def routine(pin: int | str) -> None:
 def main() -> None:
     while True:
         for subpins in batched(pins, n=batchsize):
-            with ThreadPoolExecutor(max_workers=2) as tp:
+            with ThreadPoolExecutor(max_workers=batchsize) as tp:
                 threads = []
 
                 for pin in subpins:
