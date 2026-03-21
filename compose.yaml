@@ -120,18 +120,14 @@ services:
       # udev on /dev/soil type devtmpfs (ro,nosuid,relatime,size=32847200k,nr_inodes=8211800,mode=755,inode64)
       # tmpfs on /opt/orchidarium/healthcheck type tmpfs (rw,relatime,size=10240k,uid=10001,inode64)
       # udev on /dev/bus/usb type devtmpfs (ro,nosuid,relatime,size=32847200k,nr_inodes=8211800,mode=755,inode64)
+      - /dev/gpiomem:/dev/gpiomem:ro
       - /dev/bus/usb:/dev/bus/usb:ro
-      - /dev/humidity:/dev/humidity:ro
-      - /dev/soil:/dev/soil:ro
-      - cache:/opt/orchidarium/healthcheck
     environment:
       - INFLUXDB_HOST=influxdb:8086
       - INFLUXDB_TOKEN=$$INFLUXDB_TOKEN
       - INFLUXDB_ORG=orchidarium
       - INFLUXDB_DATABASE=orchidarium
       - HEALTHCHECK_PORT=8085
-      # - HEALTHCHECK_CACHE_TTL=60
-      - HEALTHCHECK_CACHE_PATH=/opt/orchidarium/healthcheck
       - DEBUG=true
     ports:
       # Healthcheck is served on port 8085 on localhost.

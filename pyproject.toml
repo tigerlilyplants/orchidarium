@@ -33,7 +33,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "~3.13"
 pyusb = "^1.3.1"
 sht20 = "^0.1.4"
 smbus2 = "^0.5.0"
@@ -43,7 +43,8 @@ setproctitle = "^1.3.7"
 flask-cors = "^6.0.1"
 influxdb-client = {extras = ["ciso"], version = "^1.49.0"}
 gpiozero = "^2.0"
-"rpi.gpio" = "^0.7.1"
+# "rpi.gpio" = "^0.7.1"
+PySide6 = "^6.10"
 # cachetools
 
 [tool.poetry.group.dev.dependencies]
@@ -57,21 +58,10 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-# There are many entrypoints so that we may test each component individually.
-
-# This is the main process package that wraps the 'controller' and 'environment' entrypoints in subprocesses.
-hvac = "hvac.entrypoint:cli"
-
-# Alias entrypoint for the container.
-orchidarium = "hvac.entrypoint:cli"
-
-# Control the environment. This includes servos /
-controller = "controller.entrypoint:cli"
-pins = "pins.entrypoint:cli"
-environment = "environment.entrypoint:cli"
+orchidarium = "orchidarium.entrypoint:cli"
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.13"
 strict_optional = "true"
 # strict = "true"
 ignore_missing_imports = "true"

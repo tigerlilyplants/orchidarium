@@ -14,10 +14,10 @@ from time import sleep
 from functools import partial
 from threading import Thread
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from environment.publishers.influxdb import InfluxDBPublisher
-from environment.api import app
-from environment.support import sensor_count, sensor_generator
-from environment import env
+from orchidarium.publishers.influxdb import InfluxDBPublisher
+from orchidarium.api import app
+from orchidarium.support import sensor_count, sensor_generator
+from orchidarium import env
 
 if TYPE_CHECKING:
     from typing import List

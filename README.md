@@ -55,3 +55,27 @@ See the below screenshots from the Grafana dashboard.
    ```text
    docker compose up -d --build
    ```
+
+
+```
+$ sudo i2cdetect -y 1 -F
+Functionalities implemented by /dev/i2c-1:
+I2C                              yes
+SMBus Quick Command              yes
+SMBus Send Byte                  yes
+SMBus Receive Byte               yes
+SMBus Write Byte                 yes
+SMBus Read Byte                  yes
+SMBus Write Word                 yes
+SMBus Read Word                  yes
+SMBus Process Call               no
+SMBus Block Write                yes
+SMBus Block Read                 yes
+SMBus Block Process Call         no
+SMBus PEC                        no
+I2C Block Write                  yes
+I2C Block Read                   yes
+SMBus Host Notify                no
+10-bit addressing                yes
+Target mode                      no
+```

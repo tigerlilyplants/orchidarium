@@ -6,11 +6,11 @@ import os
 from pathlib import Path
 from abc import abstractmethod, ABC
 from typing import TYPE_CHECKING
-from environment.lib.json import write_json
-from environment import env
+from orchidarium.lib.json import write_json
+from orchidarium import env
 
 if TYPE_CHECKING:
-    from environment.publishers._base import Publisher
+    from orchidarium.publishers._base import Publisher
     from typing import Literal
 
 

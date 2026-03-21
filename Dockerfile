@@ -14,7 +14,7 @@ ARG TINI_VERSION=0.19.0 \
 LABEL org.opencontainers.image.description="© Emma Doyle 2025"
 LABEL org.opencontainers.image.licenses="GPLv3"
 LABEL org.opencontainers.image.authors="Emma Doyle <emma.ann.doyle@gmail.com>"
-LABEL org.opencontainers.image.documentatio="https://github.com/tigerlilyobservatory/orchidarium"
+LABEL org.opencontainers.image.documentatio="https://github.com/tigerlilyplants/orchidarium"
 
 USER root
 
@@ -34,7 +34,7 @@ RUN groupadd orchidarium \
 
 WORKDIR /opt/orchidarium
 
-# Ensure that the 'operator' user owns the directory and set up a Git hook that prevents the user from pushing.
+# Ensure that the 'orchidarium' user owns the directory and set up a Git hook that prevents the user from pushing.
 RUN chown -R orchidarium:orchidarium .
 
 USER 10001

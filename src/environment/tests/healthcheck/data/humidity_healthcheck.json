@@ -1,6 +1,0 @@
-{
-  "healthcheck": {
-    "publish": false,
-    "readout": false
-  }
-}

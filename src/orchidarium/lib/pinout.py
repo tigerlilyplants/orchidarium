@@ -10,8 +10,7 @@ pins = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
 #_gpios = [f'GPIO{x}' for x in range(4, 11 + 1)]
 # gpios = [LED(_g) for _g in _gpios]
 
-batchsize = 3
-
+batchsize = 8
 
 def routine(pin: int | str) -> None:
     with DigitalOutputDevice(pin, active_high=False, initial_value=False) as _device:

@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import json
 
 from typing import Dict
 
@@ -13,15 +14,22 @@ env: Dict[str, str]  = {
     'INFLUXDB_TOKEN':         os.getenv('INFLUXDB_TOKEN',                                     ''),
     'INFLUXDB_ORG':           os.getenv('INFLUXDB_ORG',                            'orchidarium'),
     'INFLUXDB_DATABASE':      os.getenv('INFLUXDB_DATABASE',                       'orchidarium'),
-    'INTERVAL':               os.getenv('INTERVAL',                                         '60'),
-    # 'HEALTHCHECK_CACHE_TTL':  os.getenv('HEALTHCHECK_CACHE_TTL',                             '5'),
-    'HEALTHCHECK_CACHE_PATH': os.getenv('HEALTHCHECK_CACHE_PATH', '/opt/orchidarium/healthcheck'),
+    'INTERVAL':               os.getenv('INTERVAL',                                         '10'),
     'HEALTHCHECK_PORT':       os.getenv('HEALTHCHECK_PORT',                               '8085')
 }
 
+# Log the configuration
+log.debug(
+    json.dumps(
+        {
+            k: env[k] for k in env
+            if k != 'INFLUXDB_TOKEN'
+        }
+    )
+)
+
 try:
     int(env['INTERVAL'])
-    # int(env['HEALTHCHECK_CACHE_TTL'])
     int(env['HEALTHCHECK_PORT'])
 except ValueError as e:
     log.error(e)

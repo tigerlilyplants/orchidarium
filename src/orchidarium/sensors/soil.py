@@ -8,12 +8,12 @@ from __future__ import annotations
 import logging
 import re
 
-from environment.sensors import Sensor
-from environment.lib.bus import InterfaceClaim, read
+from orchidarium.sensors import Sensor
+from orchidarium.lib.bus import InterfaceClaim, read
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from environment.publishers import Publisher
+    from orchidarium.publishers import Publisher
 
 
 log = logging.getLogger(__name__)
