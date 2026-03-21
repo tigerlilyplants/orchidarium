@@ -16,8 +16,10 @@ if __name__ == "__main__":
     if not engine.rootObjects():
         sys.exit(1)
 
-    # Based on some value, we can trigger whether or not to fullscreen the window for the touch display.
-    if __name__ == '__main__':
-        engine.rootContext().setContextProperty("isFullscreen", False)
+    # Based on some value, we can trigger whether or not to fullscreen the window for the touch display, or other display-related settings, here.
+    engine.rootContext().setContextProperty("config", {
+        "fullscreen": __name__ != '__main__',
+        "relayCount": 8
+    })
 
     sys.exit(app.exec())
