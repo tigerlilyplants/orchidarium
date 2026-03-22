@@ -40,6 +40,9 @@ OUT1 = 0x03
 CFG0 = 0x06
 CFG1 = 0x07
 
+state0 = 0xFF
+state1 = 0xFF
+
 
 def _hardware_retry(retries: int = 3) -> Callable[[bool], bool]:
     """
@@ -71,10 +74,7 @@ def _hardware_retry(retries: int = 3) -> Callable[[bool], bool]:
 
 class Relay(AbstractContextManager, Iterable):
 
-    state0 = 0xFF
-    state1 = 0xFF
-
-    def __init__(self, size: int = 16, bus: int = 1) -> None:
+    def __init__(self, size: int = 16, bus: int = 1, ro: bool = False) -> None:
         assert size <= 16
         self.size: Final[int] = size
         self.bus: Final[int] = bus
@@ -82,6 +82,7 @@ class Relay(AbstractContextManager, Iterable):
         self._switches: List[Switch] = []
         self._state: int = 0xFFFF
         self._lock: Lock = Lock()
+        self.ro = ro
 
     def __iter__(self):
         return iter(self._switches)
@@ -131,19 +132,23 @@ class Relay(AbstractContextManager, Iterable):
         self.bus.write_byte_data(self.ADDR, self.CFG1, 0x00)
 
         if any(relay.get() for relay in self):
-            for relay in self:
-                relay.reset()
+            for i, relay in enumerate(self):
+                if not self.ro:
+                    relay.reset()
+                else:
+                    log.warning(f'Skipping resetting relay switch {i + 1} due to relay connection being RO')
 
 
 class Switch:
 
-    def __init__(self, bus: SMBus, number: int, lock: Lock, switch_bounce_delay: float = 0.25):
+    def __init__(self, bus: SMBus, number: int, lock: Lock, switch_bounce_delay: float = 0.25, ro: bool = False):
         self.number = number
         assert switch_bounce_delay > 0
         self.switch_bounce_delay = timedelta(seconds=switch_bounce_delay)
         self._last_state_change = datetime.now()
-        self._bus = bus
-        self._lock = lock
+        self._bus: SMBus = bus
+        self._lock: Lock = lock
+        self.ro: bool = ro
 
     def block(self) -> None:
         """
@@ -190,6 +195,9 @@ class Switch:
         """
         Get current state of the relay and switch it to the other state.
         """
+        if self.ro:
+            log.warning(f'Skipping resetting relay switch {self.number + 1} due to relay connection being RO')
+
         for i in range(count):
             if self.get():
                 self.reset()
