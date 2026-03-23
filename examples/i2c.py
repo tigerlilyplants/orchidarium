@@ -235,22 +235,8 @@ class Switch:
         """
         with self._lock:
             if self.number < 8:
-                mask = 1 << self.number
-
-                if not state:
-                    state0 &= ~mask   # active-low
-                else:
-                    state0 |= mask
-
                 self._bus.write_byte_data(ADDR, OUT0, state0)
             else:
-                mask = 1 << (self.number - 8)
-
-                if not state:
-                    state1 &= ~mask
-                else:
-                    state1 |= mask
-
                 self._bus.write_byte_data(ADDR, OUT1, state1)
 
 
