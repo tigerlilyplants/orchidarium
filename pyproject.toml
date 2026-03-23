@@ -18,6 +18,8 @@ license-files = [
     "LICENSE"
 ]
 
+requires-python = ">=3.13,<3.14"
+
 # https://pypi.org/classifiers/
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
@@ -29,11 +31,24 @@ classifiers = [
   "Natural Language :: English",
   "License :: Other/Proprietary License",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Intended Audience :: Developers",
   "Intended Audience :: System Administrators",
+]
+
+dependencies = [
+    "pyusb (>=1.3,<2)",
+    "sht20 (>=0.1.4)",
+    "smbus2 (>=0.5.0)",
+    "flask (>=3.1.2)",
+    "bitstring (>=4.3.1)",
+    "setproctitle (>=1.3.7)",
+    "flask-cors (>=6.0.1)",
+    "influxdb-client[ciso] (>=1.49)",
+    "gpiozero (>=2.0)",
+    "rpi.gpio (>=0.7.1)",
+    "PySide6 (>=6.10)",
+    "cachetools (>=7.0.5)"
 ]
 
 [tool.poetry]
@@ -41,21 +56,6 @@ classifiers = [
 readme = [
     "README.md"
 ]
-
-[tool.poetry.dependencies]
-python = "~3.13"
-pyusb = "^1.3.1"
-sht20 = "^0.1.4"
-smbus2 = "^0.5.0"
-flask = "^3.1.2"
-bitstring = "^4.3.1"
-setproctitle = "^1.3.7"
-flask-cors = "^6.0.1"
-influxdb-client = {extras = ["ciso"], version = "^1.49.0"}
-gpiozero = "^2.0"
-# "rpi.gpio" = "^0.7.1"
-PySide6 = "^6.10"
-cachetools = "^7.0.5"
 
 [tool.poetry.group.dev.dependencies]
 types-cachetools = "^6.2.0.20251022"
@@ -67,7 +67,7 @@ pylint = "^3.3.8"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.poetry.scripts]
+[project.scripts]
 orchidarium = "orchidarium.entrypoint:cli"
 
 [project.gui-scripts]
