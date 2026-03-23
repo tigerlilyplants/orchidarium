@@ -5,13 +5,17 @@ description = "a monitoring and control agent designed for terrariums that requi
 authors = [{ name = "Emma Doyle", email ="emma.ann.doyle@gmail.com" }]
 maintainers = [{ name = "Emma Doyle", email = "emma.ann.doyle@gmail.com" }]
 license = "GPL-3.0-or-later"
-readme = "README.md"
+dynamic = [ "readme" ]
 keywords = [
     "python",
     "orchids",
     "plants",
     "terrarium",
     "hvac"
+]
+
+license-files = [
+    "LICENSE"
 ]
 
 # https://pypi.org/classifiers/
@@ -30,6 +34,12 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Intended Audience :: Developers",
   "Intended Audience :: System Administrators",
+]
+
+[tool.poetry]
+# Specify additional READMEs here.
+readme = [
+    "README.md"
 ]
 
 [tool.poetry.dependencies]
@@ -59,6 +69,9 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 orchidarium = "orchidarium.entrypoint:cli"
+
+[project.gui-scripts]
+gui = "ui.entrypoint:run"
 
 [tool.mypy]
 python_version = "3.13"

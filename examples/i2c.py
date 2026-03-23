@@ -197,6 +197,7 @@ class Switch:
         """
         if self.ro:
             log.warning(f'Skipping resetting relay switch {self.number + 1} due to relay connection being RO')
+            return None
 
         for i in range(count):
             if self.get():

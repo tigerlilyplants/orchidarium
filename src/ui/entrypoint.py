@@ -7,7 +7,7 @@ from PySide6.QtQml import QQmlApplicationEngine
 from ui.config import Config
 
 
-if __name__ == "__main__":
+def run() -> None:
     app = QGuiApplication(sys.argv)
 
     engine = QQmlApplicationEngine()
@@ -39,3 +39,7 @@ if __name__ == "__main__":
     # })
 
     sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    run()
