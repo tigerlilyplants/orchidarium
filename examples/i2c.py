@@ -40,9 +40,6 @@ OUT1 = 0x03
 CFG0 = 0x06
 CFG1 = 0x07
 
-state0 = 0xFF
-state1 = 0xFF
-
 
 def _hardware_retry(retries: int = 3) -> Callable[[bool], bool]:
     """
@@ -89,20 +86,28 @@ class Relay(AbstractContextManager, Iterable):
 
     def __enter__(self) -> Relay:
         if self.open():
-            self._initialize_relay()
+            if not self.ro:
+                self._initialize_relay()
             return self
 
-    def state(self) -> Dict[int, bool]:
+    def state(self, as_int: bool = True) -> Dict[int, bool] | int:
         """
-        Get the current state of the whole switch, as a map.
+        Get the current state of the whole switch.
+
+        Args:
+            as_int (bool): convert the return value to an integer bitmask.
 
         Returns:
-            Dict[int, bool]: A dictionary of relay numbers mapped to True/False,
-            a conglomerate indication of whether or not certain relays are on.
+            Dict[int, bool] | int: if as_int is False, return a dictionary. Otherwise, return an integer representing the state.
         """
-        return {
-            i: relay.get() for i, relay in enumerate(self)
-        }
+        if as_int:
+            mask = 0
+            for i, relay in enumerate(self):
+                if relay.get():
+                    mask |= (1 << i)
+            return mask
+        else:
+            return {i: relay.get() for i, relay in enumerate(self)}
 
     def open(self) -> bool:
         if self._smbus is None:
@@ -111,7 +116,6 @@ class Relay(AbstractContextManager, Iterable):
             Switch(
                 self.bus,
                 i,
-                self.state0 if i < self.size // 2 else self.state1,
                 self._lock,
             ) for i in range(self.size)
         ]
@@ -134,7 +138,7 @@ class Relay(AbstractContextManager, Iterable):
         if any(relay.get() for relay in self):
             for i, relay in enumerate(self):
                 if not self.ro:
-                    relay.reset()
+                    relay.reset(self.state())
                 else:
                     log.warning(f'Skipping resetting relay switch {i + 1} due to relay connection being RO')
 
@@ -164,18 +168,32 @@ class Switch:
         if (_difference := datetime.now() - self.switch_bounce_delay) > self._last_state_change:
             sleep(_difference + round(random() % self.switch_bounce_delay / 10, 4))
 
-    @LRUCache(maxsize=2)
-    def register(self, read: bool = False) -> None:
+    @property
+    @LRUCache(maxsize=1)
+    def ro_register(self) -> int:
         """
-        If the relay number is 8 or greater, automatically set this value to the proper register.
+        Get the proper read-only register number.
+
+        Returns:
+            int: number of the register.
         """
         if self.number < 8:
-            if read:
-                return IN0
+            return IN0
+        else:
+            return IN1
+
+    @property
+    @LRUCache(maxsize=1)
+    def rw_register(self) -> int:
+        """
+        Get the proper read/write-register over which to write bits.
+
+        Returns:
+            int: number of the register.
+        """
+        if self.number < 8:
             return OUT0
         else:
-            if read:
-                return IN1
             return OUT1
 
     @_hardware_retry()
@@ -187,57 +205,70 @@ class Switch:
             bool: True if on, False otherwise.
         """
         with self._lock:
-            val = self._bus.read_byte_data(ADDR, self.register(read=True))
+            val = self._bus.read_byte_data(ADDR, self.ro_register)
 
         return ((val >> self.number) & 1 if self.number < 8 else (val >> (self.number - 8)) & 1) == 1
 
-    def toggle(self, count: int = 1, delay: float = 0.0) -> None:
+    def toggle(self, relay_state: int, count: int = 1, delay: float = 0.0) -> None:
         """
         Get current state of the relay and switch it to the other state.
         """
-        if self.ro:
-            log.warning(f'Skipping resetting relay switch {self.number + 1} due to relay connection being RO')
-            return None
-
         for i in range(count):
             if self.get():
-                self.reset()
+                self.reset(relay_state=relay_state)
             else:
-                self.on()
+                self.on(relay_state=relay_state)
 
             if count > 1 and i < count - 1 and delay > 0:
                 sleep(delay)
 
-    def on(self) -> None:
+    def on(self, relay_state: int) -> None:
         """
         Turn the relay on.
         """
         self._state_change_block()
-        self._set(state=True)
+        self._set(state=True, relay_state=relay_state)
 
-    def reset(self) -> None:
+    def reset(self, relay_state: Dict[int, bool]) -> None:
         """
         Turn off the relay.
         """
         self._state_change_block()
-        self._set(state=False)
+        self._set(state=False, relay_state=relay_state)
 
     @_hardware_retry()
-    def _set(self, state: bool) -> bool:
+    def _set(self, state: bool, relay_state: int) -> bool:
         """
         Set the state of the relay to be either on (True) or off (False).
 
         Args:
-            state (bool): state to set the retry to.
+            state (bool): State to set the relay to.
+            relay_state (int): Full 16-bit relay state mask.
 
         Returns:
             bool: True if setting the value was successful, False otherwise.
         """
+        if self.ro:
+            log.warning(f'Skipping relay switch {self.number + 1} update due to relay connection being RO')
+            return None
+
         with self._lock:
+            mask = 1 << self.number
+
+            if state:
+                relay_state |= mask
+            else:
+                relay_state &= ~mask
+
+            state0 = relay_state & 0xFF
+            state1 = (relay_state >> 8) & 0xFF
+
             if self.number < 8:
                 self._bus.write_byte_data(ADDR, OUT0, state0)
             else:
                 self._bus.write_byte_data(ADDR, OUT1, state1)
+
+            return True
 
 
 if __name__ == '__main__':
