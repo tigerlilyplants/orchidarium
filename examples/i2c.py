@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import line_profiler
 
 from smbus import SMBus
 from time import sleep
@@ -11,7 +12,6 @@ from datetime import datetime, timedelta
 from itertools import batched
 from random import random
 from threading import Lock
-from line_profiler import line_profiler
 # from orchidarium import env
 from typing import TYPE_CHECKING
 
