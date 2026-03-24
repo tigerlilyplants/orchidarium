@@ -340,3 +340,4 @@ if __name__ == '__main__':
             for _ in range(2):
                 switch.toggle(relay.state())
         relay[0].toggle(relay.state())
+        relay[1].toggle(relay.state())
