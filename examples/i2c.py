@@ -335,8 +335,8 @@ class Switch(_Switch):
 
 
 if __name__ == '__main__':
-    relay = Relay()
-    for switch in relay:
-        for _ in range(2):
-            switch.toggle(relay.state())
-    relay[0].toggle(relay.state())
+    with Relay() as relay:
+        for switch in relay:
+            for _ in range(2):
+                switch.toggle(relay.state())
+        relay[0].toggle(relay.state())
