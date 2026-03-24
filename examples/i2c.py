@@ -146,7 +146,7 @@ class Relay(_Relay, Iterable, AbstractContextManager):
 
         self._switches = [
             Switch(
-                self.bus,
+                self._smbus,
                 i,
                 self._lock,
             ) for i in range(self.size)
