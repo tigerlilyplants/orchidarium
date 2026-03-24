@@ -207,7 +207,7 @@ class Switch(_Switch):
         Adds a small, random interval of time to each switch to avoid any resonance in the case.
         """
         if (datetime.now() - self.switch_bounce_delay) > self._last_state_change:
-            sleep((datetime.now() - self._last_state_change).seconds + round(random() % self.switch_bounce_delay.seconds / 10, 4))
+            sleep((datetime.now() - self._last_state_change).seconds + round(random() % (self.switch_bounce_delay.microseconds / 1e-6) / 10, 4))
         return None
 
     @property
