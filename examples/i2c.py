@@ -290,7 +290,7 @@ class Switch(_Switch):
                     i += 1
             finally:
                 if self._lock.locked():
-                    self._lock.release_lock()
+                    self._lock.release()
 
     def _set(self, state: bool, relay_state: int) -> bool:
         """
