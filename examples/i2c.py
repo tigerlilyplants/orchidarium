@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from contextlib import AbstractContextManager
 from collections.abc import Iterable
 from datetime import datetime, timedelta
+from itertools import batched
 from random import random
 from threading import Lock
 # from orchidarium import env
@@ -23,13 +24,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     'Relay',
-    'Switch',
-    'IN0',
-    'IN1',
-    'OUT0',
-    'OUT1',
-    'CFG0',
-    'CFG1'
+    'Switch'
 ]
 
 log = logging.getLogger(__name__)
@@ -342,6 +337,23 @@ if __name__ == '__main__':
             for _ in range(2):
                 switch.toggle(relay.state())
 
-        relay[0].toggle(relay.state())
+        relay[7].toggle(relay.state())
         sleep(3)
-        relay[0].toggle(relay.state())
+        relay[7].toggle(relay.state())
+
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        for switch_group in batched():
+            with ThreadPoolExecutor(max_workers=7) as pool:
+                threads = []
+
+                for switch in switch_group:
+                    for _ in range(2):
+                        threads.append(
+                            pool.submit(
+                                switch.toggle,
+                                relay.state()
+                            )
+                        )
+
+                for _ in as_completed(threads): pass
