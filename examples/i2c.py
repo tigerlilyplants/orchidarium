@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from itertools import batched
 from random import random
 from threading import Lock
+from line_profiler import line_profiler
 # from orchidarium import env
 from typing import TYPE_CHECKING
 
@@ -192,6 +193,7 @@ class Switch(_Switch):
         self._lock: Lock = lock
         self.ro: bool = ro
 
+    @line_profiler.profile
     def block(self) -> None:
         """
         Public interface call that blocks until this Switch's state can be changed again.
@@ -199,6 +201,7 @@ class Switch(_Switch):
         if (datetime.now() - self.switch_bounce_delay) > self._last_state_change:
             sleep((datetime.now() - self._last_state_change).microseconds / 1e6 + (self.switch_bounce_delay.microseconds) / 1e7)
 
+    @line_profiler.profile
     def _state_change_block(self) -> None:
         """
         Adds a small, random interval of time to each switch to avoid any resonance in the case.
@@ -267,6 +270,7 @@ class Switch(_Switch):
         """
         self._set(state=False, relay_state=relay_state)
 
+    @line_profiler.profile
     def _get(self) -> bool:
         """
         Similar to '_set', get the value of this relay over this bus.
@@ -292,6 +296,7 @@ class Switch(_Switch):
                 if acquired:
                     self._lock.release()
 
+    @line_profiler.profile
     def _set(self, state: bool, relay_state: int) -> bool:
         """
         Set the state of the relay to be either on (True) or off (False).
