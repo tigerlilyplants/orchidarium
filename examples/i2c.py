@@ -183,7 +183,7 @@ class Relay(_Relay, Iterable, AbstractContextManager):
                         log.warning(f'Skipping resetting relay switch {i + 1} due to relay connection being RO')
         else:
             log.error(f'Open connection to relay prior to initialization.')
-            return
+            return None
 
 
 class Switch(_Switch):
@@ -209,8 +209,7 @@ class Switch(_Switch):
         Adds a small, random interval of time to each switch to avoid any resonance in the case.
         """
         if (datetime.now() - self.switch_bounce_delay) > self._last_state_change:
-            sleep((datetime.now() - self._last_state_change).microseconds / 1e6 + round(random() % (self.switch_bounce_delay.microseconds / 1e-6) / 10, 4))
-        return None
+            sleep((datetime.now() - self._last_state_change).microseconds / 1e6 + round(random() % (self.switch_bounce_delay.microseconds / 1e6) / 10, 4))
 
     @property
     def ro_register(self) -> int:
@@ -342,5 +341,3 @@ if __name__ == '__main__':
         for switch in relay:
             for _ in range(2):
                 switch.toggle(relay.state())
-        relay[0].toggle(relay.state())
-        relay[1].toggle(relay.state())
