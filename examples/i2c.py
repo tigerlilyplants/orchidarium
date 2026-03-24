@@ -202,7 +202,7 @@ class Switch(_Switch):
         Public interface call that blocks until this Switch's state can be changed again.
         """
         if (datetime.now() - self.switch_bounce_delay) > self._last_state_change:
-            sleep((datetime.now() - self._last_state_change).microseconds / 1e6 + self.switch_bounce_delay.seconds / 10)
+            sleep((datetime.now() - self._last_state_change).microseconds / 1e6 + (self.switch_bounce_delay.microseconds) / 1e7)
 
     def _state_change_block(self) -> None:
         """
