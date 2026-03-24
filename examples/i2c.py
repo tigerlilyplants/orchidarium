@@ -343,7 +343,7 @@ if __name__ == '__main__':
 
         from concurrent.futures import ThreadPoolExecutor, as_completed
 
-        for switch_group in batched():
+        for switch_group in batched(relay, 7, strict=False):
             with ThreadPoolExecutor(max_workers=7) as pool:
                 threads = []
 
