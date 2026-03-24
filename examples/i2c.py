@@ -350,3 +350,6 @@ if __name__ == '__main__':
                         )
 
                     for _ in as_completed(threads): pass
+
+        for switch in relay:
+            switch.reset(relay.state())
