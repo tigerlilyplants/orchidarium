@@ -332,17 +332,9 @@ class Switch(_Switch):
 
 
 if __name__ == '__main__':
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
     with Relay() as relay:
-        for switch in relay:
-            for _ in range(2):
-                switch.toggle(relay.state())
-
-        relay[7].toggle(relay.state())
-        sleep(3)
-        relay[7].toggle(relay.state())
-
-        from concurrent.futures import ThreadPoolExecutor, as_completed
-
         for _ in range(2):
             for switch_group in batched(relay, 8, strict=False):
                 with ThreadPoolExecutor(max_workers=8) as pool:
