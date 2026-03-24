@@ -278,9 +278,9 @@ class Switch(_Switch):
         while True:
             try:
                 # Attempt to acquire a lock with a timeout that loops with delays.
-                self._lock.acquire(timeout=self.switch_bounce_delay.seconds)
+                acquired = self._lock.acquire(timeout=self.switch_bounce_delay.seconds)
 
-                if self._lock.locked():
+                if acquired:
                     val = self._smbus.read_byte_data(ADDR, self.ro_register)
 
                     return ((val >> self.number) & 1 if self.number < 8 else (val >> (self.number - 8)) & 1) == 1
@@ -289,7 +289,7 @@ class Switch(_Switch):
                     self._state_change_block()
                     i += 1
             finally:
-                if self._lock.locked():
+                if acquired:
                     self._lock.release()
 
     def _set(self, state: bool, relay_state: int) -> bool:
