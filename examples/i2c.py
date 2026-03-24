@@ -191,7 +191,7 @@ class Switch(_Switch):
         assert switch_bounce_delay > 0
         self.switch_bounce_delay = timedelta(seconds=switch_bounce_delay)
         self._last_state_change = datetime.now()
-        self._bus: SMBus = bus
+        self._smbus: SMBus = bus
         self._lock: Lock = lock
         self.ro: bool = ro
 
@@ -286,7 +286,7 @@ class Switch(_Switch):
                 self._lock.acquire(timeout=self.switch_bounce_delay.seconds)
 
                 if self._lock.locked():
-                    val = self._bus.read_byte_data(ADDR, self.ro_register)
+                    val = self._smbus.read_byte_data(ADDR, self.ro_register)
 
                     return ((val >> self.number) & 1 if self.number < 8 else (val >> (self.number - 8)) & 1) == 1
                 else:
@@ -325,9 +325,9 @@ class Switch(_Switch):
                     state1 = (relay_state >> 8) & 0xFF
 
                     if self.number < 8:
-                        self._bus.write_byte_data(ADDR, OUT0, state0)
+                        self._smbus.write_byte_data(ADDR, OUT0, state0)
                     else:
-                        self._bus.write_byte_data(ADDR, OUT1, state1)
+                        self._smbus.write_byte_data(ADDR, OUT1, state1)
 
                     return True
             except IOError as e:
