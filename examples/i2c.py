@@ -58,6 +58,7 @@ class _Relay(ABC):
     def close(self) -> None:
         raise NotImplementedError
 
+
 class _Switch(ABC):
 
     @abstractmethod
@@ -95,7 +96,8 @@ class Relay(_Relay, Iterable, AbstractContextManager):
         self._switches: List[Switch] = []
         self._state: int = 0xFFFF
         self._lock: Lock = Lock()
-        self.ro = ro
+        self.ro: Final[bool] = ro
+        self._locked: bool = False
 
     def __getitem__(self, key: int) -> Switch:
         """
@@ -200,14 +202,14 @@ class Switch(_Switch):
         Public interface call that blocks until this Switch's state can be changed again.
         """
         if (datetime.now() - self.switch_bounce_delay) > self._last_state_change:
-            sleep((datetime.now() - self._last_state_change).seconds + self.switch_bounce_delay.seconds / 10)
+            sleep((datetime.now() - self._last_state_change).microseconds / 1e6 + self.switch_bounce_delay.seconds / 10)
 
     def _state_change_block(self) -> None:
         """
         Adds a small, random interval of time to each switch to avoid any resonance in the case.
         """
         if (datetime.now() - self.switch_bounce_delay) > self._last_state_change:
-            sleep((datetime.now() - self._last_state_change).seconds + round(random() % (self.switch_bounce_delay.microseconds / 1e-6) / 10, 4))
+            sleep((datetime.now() - self._last_state_change).microseconds / 1e6 + round(random() % (self.switch_bounce_delay.microseconds / 1e-6) / 10, 4))
         return None
 
     @property
@@ -269,7 +271,6 @@ class Switch(_Switch):
         """
         Turn off the relay.
         """
-        self._state_change_block()
         self._set(state=False, relay_state=relay_state)
 
     def _get(self) -> bool:
@@ -307,6 +308,8 @@ class Switch(_Switch):
         Returns:
             bool: True if setting the value was successful, False otherwise.
         """
+        self._state_change_block()
+
         if self.ro:
             log.warning(f'Skipping relay switch {self.number + 1} update due to relay connection being RO')
             return False
