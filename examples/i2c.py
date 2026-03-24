@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import logging
 
-from functools import wraps
 from smbus import SMBus
 from time import sleep
+from abc import ABC, abstractmethod
 from contextlib import AbstractContextManager
 from collections.abc import Iterable
 from datetime import datetime, timedelta
 from random import random
 from threading import Lock
-from cachetools import LRUCache
 from orchidarium import env
 from typing import TYPE_CHECKING
 
@@ -18,15 +17,19 @@ if TYPE_CHECKING:
     from typing import (
         List,
         Final,
-        Callable,
-        Any,
         Dict
     )
 
 
 __all__ = [
     'Relay',
-    'Switch'
+    'Switch',
+    'IN0',
+    'IN1',
+    'OUT0',
+    'OUT1',
+    'CFG0',
+    'CFG1'
 ]
 
 log = logging.getLogger(__name__)
@@ -41,35 +44,48 @@ CFG0 = 0x06
 CFG1 = 0x07
 
 
-def _hardware_retry(retries: int = 3) -> Callable[[bool], bool]:
-    """
-    Check the state against the expected state
+class _Relay(ABC):
 
-    Args:
-        retries (int): number of attempts to make to switch the state of the relay switch.
+    @abstractmethod
+    def state(self) -> int | Dict[int, bool]:
+        raise NotImplementedError
 
-    Returns:
-        Callable[[bool], bool]: The wrapped function.
-    """
-    def retry(f: Callable[[bool], bool]) -> Callable[[bool], bool]:
-        @wraps(f)
-        def new_f(state: bool) -> bool:
-            for _ in range(retries):
-                try:
-                    if (res := f(state)):
-                        return res
-                    else:
-                        log.error(f'Function "{f.__name__}" returned a negative result, retrying')
-                except IOError as e:
-                    log.error(e)
-            else:
-                log.error(f'Attempt {retries} / {retries}: failed to set state of relay')
-                return False
-        return new_f
-    return retry
+    @abstractmethod
+    def open(self) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    def close(self) -> None:
+        raise NotImplementedError
+
+class _Switch(ABC):
+
+    @abstractmethod
+    def block(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get(self) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    def toggle(self, relay_state: int, count: int = 1, delay: float = 0.0) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def reset(self, relay_state: int) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _get(self) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    def _set(self, state: bool, relay_state: int) -> bool:
+        raise NotImplementedError
 
 
-class Relay(AbstractContextManager, Iterable):
+class Relay(_Relay, Iterable, AbstractContextManager):
 
     def __init__(self, size: int = 16, bus: int = 1, ro: bool = False) -> None:
         assert size <= 16
@@ -81,37 +97,53 @@ class Relay(AbstractContextManager, Iterable):
         self._lock: Lock = Lock()
         self.ro = ro
 
+    def __getitem__(self, key: int) -> Switch:
+        """
+        Get a switch from an instance of this object.
+
+        Args:
+            key (int): the key-indexed item to retrieve.
+
+        Returns:
+            Switch: the switch object to retrieve.
+        """
+        return self._switches[key]
+
     def __iter__(self):
         return iter(self._switches)
 
     def __enter__(self) -> Relay:
         if self.open():
-            if not self.ro:
-                self._initialize_relay()
             return self
+        else:
+            raise IOError(f'Could not open connection to relay')
 
-    def state(self, as_int: bool = True) -> Dict[int, bool] | int:
+    def state(self) -> int:
         """
         Get the current state of the whole switch.
 
-        Args:
-            as_int (bool): convert the return value to an integer bitmask.
+        Returns:
+            int: the state of the switch is determined by an integer.
+        """
+        mask = 0
+        for i, relay in enumerate(self):
+            if relay.get():
+                mask |= (1 << i)
+        return mask
+
+    def state_map(self) -> Dict[int, bool]:
+        """
+        Get a dictionary representing the state of all the relays.
 
         Returns:
-            Dict[int, bool] | int: if as_int is False, return a dictionary. Otherwise, return an integer representing the state.
+            Dict[int, bool]: A map of indexed relays and their states (True or False for open / closed).
         """
-        if as_int:
-            mask = 0
-            for i, relay in enumerate(self):
-                if relay.get():
-                    mask |= (1 << i)
-            return mask
-        else:
-            return {i: relay.get() for i, relay in enumerate(self)}
+        return {i: relay.get() for i, relay in enumerate(self)}
 
     def open(self) -> bool:
         if self._smbus is None:
             self._smbus = SMBus(self.bus)
+
         self._switches = [
             Switch(
                 self.bus,
@@ -119,11 +151,16 @@ class Relay(AbstractContextManager, Iterable):
                 self._lock,
             ) for i in range(self.size)
         ]
+
+        if not self.ro:
+            self._initialize_relay()
+
         return True
 
     def close(self) -> None:
-        self._smbus.close()
-        self._smbus = None
+        if self._smbus is not None:
+            self._smbus.close()
+            self._smbus = None
 
     def __exit__(self, *args):
         self.close()
@@ -132,18 +169,22 @@ class Relay(AbstractContextManager, Iterable):
         """
         Initialize a relay once when a connection is established.
         """
-        self.bus.write_byte_data(self.ADDR, self.CFG0, 0x00)
-        self.bus.write_byte_data(self.ADDR, self.CFG1, 0x00)
+        if self._smbus is not None:
+            self._smbus.write_byte_data(ADDR, CFG0, 0x00)
+            self._smbus.write_byte_data(ADDR, CFG1, 0x00)
 
-        if any(relay.get() for relay in self):
-            for i, relay in enumerate(self):
-                if not self.ro:
-                    relay.reset(self.state())
-                else:
-                    log.warning(f'Skipping resetting relay switch {i + 1} due to relay connection being RO')
+            if any(relay.get() for relay in self):
+                for i, relay in enumerate(self):
+                    if not self.ro:
+                        relay.reset(self.state())
+                    else:
+                        log.warning(f'Skipping resetting relay switch {i + 1} due to relay connection being RO')
+        else:
+            log.error(f'Open connection to relay prior to initialization.')
+            return
 
 
-class Switch:
+class Switch(_Switch):
 
     def __init__(self, bus: SMBus, number: int, lock: Lock, switch_bounce_delay: float = 0.25, ro: bool = False):
         self.number = number
@@ -158,18 +199,18 @@ class Switch:
         """
         Public interface call that blocks until this Switch's state can be changed again.
         """
-        if (_difference := datetime.now() - self.switch_bounce_delay) > self._last_state_change:
-            sleep(_difference + self.switch_bounce_delay / 10)
+        if (datetime.now() - self.switch_bounce_delay) > self._last_state_change:
+            sleep((datetime.now() - self._last_state_change).seconds + self.switch_bounce_delay.seconds / 10)
 
     def _state_change_block(self) -> None:
         """
         Adds a small, random interval of time to each switch to avoid any resonance in the case.
         """
-        if (_difference := datetime.now() - self.switch_bounce_delay) > self._last_state_change:
-            sleep(_difference + round(random() % self.switch_bounce_delay / 10, 4))
+        if (datetime.now() - self.switch_bounce_delay) > self._last_state_change:
+            sleep((datetime.now() - self._last_state_change).seconds + round(random() % self.switch_bounce_delay.seconds / 10, 4))
+        return None
 
     @property
-    @LRUCache(maxsize=1)
     def ro_register(self) -> int:
         """
         Get the proper read-only register number.
@@ -183,8 +224,7 @@ class Switch:
             return IN1
 
     @property
-    @LRUCache(maxsize=1)
-    def rw_register(self) -> int:
+    def wo_register(self) -> int:
         """
         Get the proper read/write-register over which to write bits.
 
@@ -196,7 +236,6 @@ class Switch:
         else:
             return OUT1
 
-    @_hardware_retry()
     def get(self) -> bool:
         """
         Get the current state of the relay (whether it's on or off).
@@ -204,10 +243,7 @@ class Switch:
         Returns:
             bool: True if on, False otherwise.
         """
-        with self._lock:
-            val = self._bus.read_byte_data(ADDR, self.ro_register)
-
-        return ((val >> self.number) & 1 if self.number < 8 else (val >> (self.number - 8)) & 1) == 1
+        return self._get()
 
     def toggle(self, relay_state: int, count: int = 1, delay: float = 0.0) -> None:
         """
@@ -229,14 +265,37 @@ class Switch:
         self._state_change_block()
         self._set(state=True, relay_state=relay_state)
 
-    def reset(self, relay_state: Dict[int, bool]) -> None:
+    def reset(self, relay_state: int) -> None:
         """
         Turn off the relay.
         """
         self._state_change_block()
         self._set(state=False, relay_state=relay_state)
 
-    @_hardware_retry()
+    def _get(self) -> bool:
+        """
+        Similar to '_set', get the value of this relay over this bus.
+
+        Returns:
+            bool: True if getting the
+        """
+        i = 2
+        while True:
+            try:
+                # Attempt to acquire a lock with a timeout that loops with delays.
+                self._lock.acquire(timeout=self.switch_bounce_delay.seconds)
+
+                if self._lock.locked():
+                    val = self._bus.read_byte_data(ADDR, self.ro_register)
+
+                    return ((val >> self.number) & 1 if self.number < 8 else (val >> (self.number - 8)) & 1) == 1
+                else:
+                    log.debug(f'Unable to acquire lock, retry {i} / ∞')
+                    self._state_change_block()
+                    i += 1
+            finally:
+                self._lock.release_lock()
+
     def _set(self, state: bool, relay_state: int) -> bool:
         """
         Set the state of the relay to be either on (True) or off (False).
@@ -250,30 +309,34 @@ class Switch:
         """
         if self.ro:
             log.warning(f'Skipping relay switch {self.number + 1} update due to relay connection being RO')
-            return None
+            return False
 
-        with self._lock:
-            mask = 1 << self.number
+        while True:
+            try:
+                with self._lock:
+                    mask = 1 << self.number
 
-            if state:
-                relay_state |= mask
-            else:
-                relay_state &= ~mask
+                    if state:
+                        relay_state |= mask
+                    else:
+                        relay_state &= ~mask
 
-            state0 = relay_state & 0xFF
-            state1 = (relay_state >> 8) & 0xFF
+                    state0 = relay_state & 0xFF
+                    state1 = (relay_state >> 8) & 0xFF
 
-            if self.number < 8:
-                self._bus.write_byte_data(ADDR, OUT0, state0)
-            else:
-                self._bus.write_byte_data(ADDR, OUT1, state1)
+                    if self.number < 8:
+                        self._bus.write_byte_data(ADDR, OUT0, state0)
+                    else:
+                        self._bus.write_byte_data(ADDR, OUT1, state1)
 
-            return True
+                    return True
+            except IOError as e:
+                log.error(e)
 
 
 if __name__ == '__main__':
     relay = Relay()
     for switch in relay:
         for _ in range(2):
-            switch.toggle()
-    relay[0].toggle()
+            switch.toggle(relay.state())
+    relay[0].toggle(relay.state())
