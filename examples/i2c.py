@@ -343,12 +343,12 @@ if __name__ == '__main__':
 
         from concurrent.futures import ThreadPoolExecutor, as_completed
 
-        for switch_group in batched(relay, 7, strict=False):
-            with ThreadPoolExecutor(max_workers=7) as pool:
-                threads = []
+        for _ in range(2):
+            for switch_group in batched(relay, 8, strict=False):
+                with ThreadPoolExecutor(max_workers=8) as pool:
+                    threads = []
 
-                for switch in switch_group:
-                    for _ in range(2):
+                    for switch in switch_group:
                         threads.append(
                             pool.submit(
                                 switch.toggle,
@@ -356,4 +356,4 @@ if __name__ == '__main__':
                             )
                         )
 
-                for _ in as_completed(threads): pass
+                    for _ in as_completed(threads): pass
