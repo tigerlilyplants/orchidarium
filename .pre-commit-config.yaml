@@ -49,8 +49,8 @@ repos:
 -   repo: https://github.com/python-poetry/poetry
     rev: 2.3.2
     hooks:
-    -   id: poetry-check
     -   id: poetry-lock
+    -   id: poetry-check
 
 # -   repo: https://github.com/PyCQA/pylint
 #     rev: v3.3.8
