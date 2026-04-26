@@ -40,6 +40,10 @@ CFG0 = 0x06
 CFG1 = 0x07
 
 
+# These ABCs can go in a _base.py and get subclassed / used to make other relay interfaces that use GPIO, etc.
+# We want the interface to relays to always be the same.
+
+
 class _Relay(ABC):
 
     @abstractmethod
@@ -52,6 +56,20 @@ class _Relay(ABC):
 
     @abstractmethod
     def close(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def reset(self) -> None:
+        # Instead of 'for switch in relay: relay.reset()', provide a high level method
+        # that maps these lower operations over all the switches on a relay.
+        raise NotImplementedError
+
+    @abstractmethod
+    def on(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def toggle(self, relay_state: int, count: int = 1, delay: float = 0.0) -> None:
         raise NotImplementedError
 
 
@@ -88,12 +106,12 @@ class Relay(_Relay, Iterable, AbstractContextManager):
         assert size <= 16
         self.size: Final[int] = size
         self.bus: Final[int] = bus
-        self._smbus: SMBus | None = None
-        self._switches: List[Switch] = []
-        self._state: int = 0xFFFF
-        self._lock: Lock = Lock()
         self.ro: Final[bool] = ro
-        self._locked: bool = False
+
+        self._switches: List[Switch] = []
+        self._smbus: SMBus | None = None
+        self._state: int = 0x00
+        self._lock: Lock = Lock()
 
     def __getitem__(self, key: int) -> Switch:
         """
@@ -123,11 +141,10 @@ class Relay(_Relay, Iterable, AbstractContextManager):
         Returns:
             int: the state of the switch is determined by an integer.
         """
-        mask = 0
-        for i, relay in enumerate(self):
-            if relay.get():
-                mask |= (1 << i)
-        return mask
+        with self._lock:
+            return self._state
+
+    def _state_refresh
 
     def state_map(self) -> Dict[int, bool]:
         """
@@ -144,9 +161,8 @@ class Relay(_Relay, Iterable, AbstractContextManager):
 
         self._switches = [
             Switch(
-                self._smbus,
+                self,
                 i,
-                self._lock,
             ) for i in range(self.size)
         ]
 
@@ -180,60 +196,6 @@ class Relay(_Relay, Iterable, AbstractContextManager):
         else:
             log.error(f'Open connection to relay prior to initialization.')
             return None
-
-
-class Switch(_Switch):
-
-    def __init__(self, bus: SMBus, number: int, lock: Lock, switch_bounce_delay: float = 0.25, ro: bool = False):
-        self.number = number
-        assert switch_bounce_delay > 0
-        self.switch_bounce_delay = timedelta(seconds=switch_bounce_delay)
-        self._last_state_change = datetime.now()
-        self._smbus: SMBus = bus
-        self._lock: Lock = lock
-        self.ro: bool = ro
-
-    @line_profiler.profile
-    def block(self) -> None:
-        """
-        Public interface call that blocks until this Switch's state can be changed again.
-        """
-        if (datetime.now() - self.switch_bounce_delay) > self._last_state_change:
-            sleep((datetime.now() - self._last_state_change).microseconds / 1e6 + (self.switch_bounce_delay.microseconds) / 1e7)
-
-    @line_profiler.profile
-    def _state_change_block(self) -> None:
-        """
-        Adds a small, random interval of time to each switch to avoid any resonance in the case.
-        """
-        if (datetime.now() - self.switch_bounce_delay) > self._last_state_change:
-            sleep((datetime.now() - self._last_state_change).microseconds / 1e6 + round(random() % (self.switch_bounce_delay.microseconds / 1e6) / 10, 4))
-
-    @property
-    def ro_register(self) -> int:
-        """
-        Get the proper read-only register number.
-
-        Returns:
-            int: number of the register.
-        """
-        if self.number < 8:
-            return IN0
-        else:
-            return IN1
-
-    @property
-    def wo_register(self) -> int:
-        """
-        Get the proper read/write-register over which to write bits.
-
-        Returns:
-            int: number of the register.
-        """
-        if self.number < 8:
-            return OUT0
-        else:
-            return OUT1
 
     def get(self) -> bool:
         """
@@ -337,6 +299,43 @@ class Switch(_Switch):
                 log.error(e)
 
 
+class Switch(_Switch):
+
+    def __init__(self, relay: Relay, number: int, switch_bounce_delay: float = 0.25, ro: bool = False):
+        self._relay = relay
+        self.number = number
+        assert switch_bounce_delay > 0
+        self.switch_bounce_delay = timedelta(seconds=switch_bounce_delay)
+        self._last_state_change = datetime.now()
+        self.ro: bool = ro
+
+        if self.number < 8:
+            self.wo_register: Final[int] = OUT0
+        else:
+            self.wo_register: Final[int] = OUT1
+
+        if self.number < 8:
+            self.ro_register: Final[int] = IN0
+        else:
+            self.ro_register: Final[int] = IN1
+
+    @line_profiler.profile
+    def block(self) -> None:
+        """
+        Public interface call that blocks until this Switch's state can be changed again.
+        """
+        if (_diff := datetime.now() - self.switch_bounce_delay) > self._last_state_change:
+            sleep((self._last_state_change - _diff).total_seconds() + self.switch_bounce_delay.total_seconds() / 1e1)
+
+    @line_profiler.profile
+    def _state_change_block(self) -> None:
+        """
+        Adds a small, random interval of time to each switch to avoid any resonance in the case.
+        """
+        if (_diff := datetime.now() - self.switch_bounce_delay) > self._last_state_change:
+            sleep((self._last_state_change - _diff).total_seconds() + round(random() % (self.switch_bounce_delay.total_seconds() / 1e1), 4))
+
+
 if __name__ == '__main__':
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -349,12 +348,11 @@ if __name__ == '__main__':
                     for switch in switch_group:
                         threads.append(
                             pool.submit(
-                                switch.toggle,
-                                relay.state()
+                                switch.toggle
                             )
                         )
 
                     for _ in as_completed(threads): pass
 
         for switch in relay:
-            switch.reset(relay.state())
+            switch.reset()
