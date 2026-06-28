@@ -16,15 +16,23 @@ SEED = 76127
 
 GRID = 9
 JITTER = 0.34
-MIN_AREA = 55.0
-MAX_AREA = 720.0
-BASE_SCALE = 0.44
-TOP_SCALE = 0.96
+MIN_AREA = 20.0
+MAX_AREA = 360.0
+BASE_SCALE = 0.54
+TOP_SCALE = 1.08
 WALL = 1.05
 NZ = 8
 POST_WIDTH = 18.0
 POST_INSIDE_CHAMFER = 8.0
 BASE_MARGIN = 0.35
+BASE_SMOOTHING = 4
+TOP_SMOOTHING = 3
+RIM_LIFT = 0.85
+RIM_INNER_DROP = 0.65
+RIM_WAVE = 0.32
+MAX_RIM_EXTRA = RIM_LIFT + RIM_WAVE * 1.45
+BODY_MAX_HEIGHT = TUBE_MAX_HEIGHT - MAX_RIM_EXTRA
+HORN_FLARE_START = 0.30
 
 
 def dist2(a, b):
@@ -126,11 +134,11 @@ def chaikin(poly, iterations=4):
     return pts
 
 
-def eroded_loop(tri, centroid, scale):
+def eroded_loop(tri, centroid, scale, iterations=TOP_SMOOTHING):
     pts = [(centroid[0] + (p[0] - centroid[0]) * scale, centroid[1] + (p[1] - centroid[1]) * scale) for p in tri]
     if signed_area(pts) < 0:
         pts.reverse()
-    return chaikin(pts, 4)
+    return chaikin(pts, iterations)
 
 
 def loop_radius(loop, centroid):
@@ -174,14 +182,26 @@ def lerp_point(a, b, t):
     return (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)
 
 
+def horn_flare_mix(t):
+    return base.smoothstep(HORN_FLARE_START, 1.0, t)
+
+
 def color_for_cell(x, y, rng):
     del x, y
     pick = rng.random()
     if pick < 0.22:
-        return "white"
+        return 2
     if pick < 0.58:
-        return "orange"
-    return "beige"
+        return 4
+    return 3
+
+
+def rim_wave(cell, index, count):
+    angle = 2.0 * math.pi * index / count
+    return (
+        RIM_WAVE * math.sin(2.0 * angle + cell["rim_phase"])
+        + RIM_WAVE * 0.45 * math.sin(5.0 * angle + cell["rim_phase2"])
+    )
 
 
 def make_cells():
@@ -204,13 +224,13 @@ def make_cells():
             continue
         seen.add(key)
         centroid = (cx, cy)
-        base_loop, base_shift = fit_loop_inside_tile(eroded_loop(tri, centroid, BASE_SCALE))
+        base_loop, base_shift = fit_loop_inside_tile(eroded_loop(tri, centroid, BASE_SCALE, BASE_SMOOTHING))
         if base_loop is None:
             continue
-        top_loop = eroded_loop(tri, centroid, TOP_SCALE)
+        top_loop = eroded_loop(tri, centroid, TOP_SCALE, TOP_SMOOTHING)
         base_center = (centroid[0] + base_shift[0], centroid[1] + base_shift[1])
         radius = loop_radius(top_loop, centroid)
-        height = min(TUBE_MAX_HEIGHT * 0.99, rng.uniform(14.0, 27.5) * (0.82 + min(1.0, radius / 16.0) * 0.28))
+        height = min(BODY_MAX_HEIGHT * 0.99, rng.uniform(14.0, 27.5) * (0.82 + min(1.0, radius / 16.0) * 0.28))
         color = color_for_cell(cx % TILE, cy % TILE, rng)
         cells.append(
             {
@@ -219,11 +239,25 @@ def make_cells():
                 "base_center": base_center,
                 "base_loop": base_loop,
                 "top_loop": top_loop,
-                "height": min(TUBE_MAX_HEIGHT * 0.99, height),
+                "height": min(BODY_MAX_HEIGHT * 0.99, height),
                 "color": color,
+                "rim_phase": rng.uniform(0.0, 2.0 * math.pi),
+                "rim_phase2": rng.uniform(0.0, 2.0 * math.pi),
             }
         )
+    compress_lower_tube_heights(cells)
     return cells
+
+
+def compress_lower_tube_heights(cells):
+    if len(cells) < 2:
+        return
+    ordered = sorted(cells, key=lambda cell: cell["height"])
+    cutoff = max(1, int(len(ordered) * 0.55))
+    for index, cell in enumerate(ordered[:cutoff]):
+        alpha = index / max(1, cutoff - 1)
+        factor = 0.82 + 0.13 * alpha
+        cell["height"] *= factor
 
 
 def scaled_loop(loop, centroid, factor):
@@ -238,15 +272,25 @@ def add_eroded_triangle_tube(mesh, cell):
     inner = []
     for zi in range(NZ + 1):
         t = zi / NZ
-        mix = base.smoothstep(0.0, 1.0, t)
+        mix = horn_flare_mix(t)
         loop = lerp_loop(cell["base_loop"], cell["top_loop"], mix)
         center = lerp_point(base_center, centroid, mix)
         radius = max(1.0, loop_radius(loop, center))
         inner_factor = max(0.18, (radius - WALL) / radius)
         inner_loop = scaled_loop(loop, center, inner_factor)
         z = BASE + height * t
-        outer.append([(p[0], p[1], z) for p in loop])
-        inner.append([(p[0], p[1], z) for p in inner_loop])
+        rim = base.smoothstep(0.66, 1.0, t)
+        count = len(loop)
+        outer_ring = []
+        inner_ring = []
+        for i, p in enumerate(loop):
+            lift = rim * (RIM_LIFT + rim_wave(cell, i, count))
+            outer_ring.append((p[0], p[1], z + lift))
+        for i, p in enumerate(inner_loop):
+            lift = rim * (RIM_LIFT - RIM_INNER_DROP + rim_wave(cell, i, count) * 0.45)
+            inner_ring.append((p[0], p[1], z + lift))
+        outer.append(outer_ring)
+        inner.append(inner_ring)
 
     n = len(outer[0])
     for zi in range(NZ):
@@ -322,7 +366,7 @@ def coverage_estimate(cells, samples=25000):
 
 
 def write_preview(path, cells, tiled=False):
-    palette = {"white": "#f7f3e8", "beige": "#d8b692", "orange": "#e8662e"}
+    palette = {1: "#111111", 2: "#f7f3e8", 3: "#d8b692", 4: "#e8662e"}
     tiles = 3 if tiled else 1
     margin = 12.0
     span = TILE * tiles
@@ -331,7 +375,7 @@ def write_preview(path, cells, tiled=False):
         f.write('<rect x="%.3f" y="%.3f" width="%.3f" height="%.3f" fill="#f1eadf"/>\n' % (-margin, -margin, span + margin * 2, span + margin * 2))
         for ty in range(tiles):
             for tx in range(tiles):
-                f.write('<rect x="%.3f" y="%.3f" width="%.3f" height="%.3f" fill="#d8b692" stroke="#6e5a48" stroke-width="0.45" stroke-opacity="0.55"/>\n' % (tx * TILE, ty * TILE, TILE, TILE))
+                f.write('<rect x="%.3f" y="%.3f" width="%.3f" height="%.3f" fill="%s" stroke="#6e5a48" stroke-width="0.45" stroke-opacity="0.55"/>\n' % (tx * TILE, ty * TILE, TILE, TILE, palette[1]))
         if tiled:
             f.write('<rect x="%.3f" y="%.3f" width="%.3f" height="%.3f" fill="none" stroke="#2e251f" stroke-width="1.25"/>\n' % (TILE, TILE, TILE, TILE))
         for ty in range(tiles):
@@ -403,31 +447,35 @@ def make_box_corner_post():
 
 
 def write_readme(path, cells, overlaps, coverage):
-    counts = {name: sum(1 for c in cells if c["color"] == name) for name in ("white", "beige", "orange")}
+    counts = {number: sum(1 for c in cells if c["color"] == number) for number in (2, 3, 4)}
     with open(path, "w", encoding="utf-8") as f:
         f.write("Delaunay eroded-boundary tube tile\n")
         f.write("==================================\n\n")
         f.write("Alternate procedural approach: jittered periodic point field, pure-Python Delaunay triangulation, then eroded/smoothed triangle boundaries form the tube lips.\n")
-        f.write("Dimensions: 152.4 mm x 152.4 mm base tile, 6.35 mm base, 38.1 mm max height.\n")
+        f.write("Dimensions: %.1f mm x %.1f mm base tile, %.2f mm base, %.1f mm max height.\n" % (TILE, TILE, BASE, base.MAX_Z))
         f.write("The physical plate is exactly the same width as the periodic Delaunay domain; edge cells use wider inward-shifted bases and lean outward to their original top loops.\n")
-        f.write("Top loops stay inside eroded Delaunay triangles, so neighboring tube tops are separated by construction.\n")
-        f.write("Color placement is randomized with fixed weighted probabilities, independent of tube height and geometry.\n")
-        f.write("Audit: %d top-loop overlap pairs; estimated top coverage %.1f%%.\n\n" % (overlaps, coverage * 100.0))
+        f.write("Top loops expand past the eroded Delaunay boundaries for a denser packed canopy; taller tubes may overhang shorter neighbors.\n")
+        f.write("The tube body uses a horn-flare curve: wider bases, slower lower growth, then a later outward flare near the top.\n")
+        f.write("Tube tops include a subtle uneven raised rim and lower inner edge, so the lip has an organic beveled curve instead of a flat cut.\n")
+        f.write("Bambu Studio material mapping: color 1 = black base, color 2 = white tubes, color 3 = beige tubes, color 4 = orange tubes.\n")
+        f.write("Color placement for tube colors 2-4 is randomized with fixed weighted probabilities, independent of tube height and geometry.\n")
+        f.write("Audit: %d allowed top-overhang pairs; estimated top coverage %.1f%%.\n\n" % (overlaps, coverage * 100.0))
         f.write("Files:\n")
-        f.write("- delaunay_tile_6in_white.stl: %d white tubes\n" % counts["white"])
-        f.write("- delaunay_tile_6in_beige.stl: beige base plus %d beige tubes\n" % counts["beige"])
-        f.write("- delaunay_tile_6in_orange.stl: %d orange tubes\n" % counts["orange"])
-        f.write("- delaunay_tile_6in_combined_reference.stl: all tile geometry merged\n")
-        f.write("- delaunay_tile_6in_top_preview.svg: single-tile top view\n")
-        f.write("- delaunay_tile_6in_tessellation_preview.svg: 3x3 repeated top view\n")
-        f.write("- delaunay_tile_box_corner_post.stl: 6 inch tall post with connector studs on two adjacent sides and a 45 degree inside chamfer\n")
+        f.write("- delaunay_tile_4in_color_1_black.stl: black base\n")
+        f.write("- delaunay_tile_4in_color_2_white.stl: %d white tubes\n" % counts[2])
+        f.write("- delaunay_tile_4in_color_3_beige.stl: %d beige tubes\n" % counts[3])
+        f.write("- delaunay_tile_4in_color_4_orange.stl: %d orange tubes\n" % counts[4])
+        f.write("- delaunay_tile_4in_combined_reference.stl: all tile geometry merged\n")
+        f.write("- delaunay_tile_4in_top_preview.svg: single-tile top view\n")
+        f.write("- delaunay_tile_4in_tessellation_preview.svg: 3x3 repeated top view\n")
+        f.write("- delaunay_tile_box_corner_post.stl: %.1f mm tall post with connector studs on two adjacent sides and a 45 degree inside chamfer\n" % TILE)
 
 
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     cells = make_cells()
-    meshes = {"white": base.Mesh(), "beige": base.Mesh(), "orange": base.Mesh()}
-    base.add_base_with_bottom_ports(meshes["beige"])
+    meshes = {1: base.Mesh(), 2: base.Mesh(), 3: base.Mesh(), 4: base.Mesh()}
+    base.add_base_with_bottom_ports(meshes[1])
     for cell in cells:
         add_eroded_triangle_tube(meshes[cell["color"]], cell)
 
@@ -435,27 +483,33 @@ def main():
     for mesh in meshes.values():
         combined.extend(mesh)
 
-    for color in ("white", "beige", "orange"):
-        meshes[color].write_ascii_stl(os.path.join(OUT_DIR, "delaunay_tile_6in_%s.stl" % color), "delaunay_tile_6in_" + color)
-    combined.write_ascii_stl(os.path.join(OUT_DIR, "delaunay_tile_6in_combined_reference.stl"), "delaunay_tile_6in_combined_reference")
+    color_files = {
+        1: ("delaunay_tile_4in_color_1_black.stl", "delaunay_tile_4in_color_1_black"),
+        2: ("delaunay_tile_4in_color_2_white.stl", "delaunay_tile_4in_color_2_white"),
+        3: ("delaunay_tile_4in_color_3_beige.stl", "delaunay_tile_4in_color_3_beige"),
+        4: ("delaunay_tile_4in_color_4_orange.stl", "delaunay_tile_4in_color_4_orange"),
+    }
+    for color_number, (filename, solid_name) in color_files.items():
+        meshes[color_number].write_ascii_stl(os.path.join(OUT_DIR, filename), solid_name)
+    combined.write_ascii_stl(os.path.join(OUT_DIR, "delaunay_tile_4in_combined_reference.stl"), "delaunay_tile_4in_combined_reference")
     base.make_straight_connector().write_ascii_stl(os.path.join(OUT_DIR, "delaunay_tile_straight_snap_connector.stl"), "delaunay_tile_straight_snap_connector")
     base.make_corner_connector().write_ascii_stl(os.path.join(OUT_DIR, "delaunay_tile_corner_snap_connector.stl"), "delaunay_tile_corner_snap_connector")
     make_box_corner_post().write_ascii_stl(os.path.join(OUT_DIR, "delaunay_tile_box_corner_post.stl"), "delaunay_tile_box_corner_post")
 
     overlaps = overlap_audit(cells)
     coverage = coverage_estimate(cells)
-    top_svg = os.path.join(OUT_DIR, "delaunay_tile_6in_top_preview.svg")
-    tess_svg = os.path.join(OUT_DIR, "delaunay_tile_6in_tessellation_preview.svg")
+    top_svg = os.path.join(OUT_DIR, "delaunay_tile_4in_top_preview.svg")
+    tess_svg = os.path.join(OUT_DIR, "delaunay_tile_4in_tessellation_preview.svg")
     write_preview(top_svg, cells, tiled=False)
     write_preview(tess_svg, cells, tiled=True)
     write_png_for_svg(top_svg)
     write_png_for_svg(tess_svg)
-    write_readme(os.path.join(OUT_DIR, "delaunay_tile_6in_README.txt"), cells, overlaps, coverage)
+    write_readme(os.path.join(OUT_DIR, "delaunay_tile_4in_README.txt"), cells, overlaps, coverage)
     print("Generated %d Delaunay eroded tube cells" % len(cells))
-    print("top-loop overlap pairs: %d" % overlaps)
+    print("allowed top-overhang pairs: %d" % overlaps)
     print("estimated top coverage: %.1f%%" % (coverage * 100.0))
-    for color in ("white", "beige", "orange"):
-        print("%s triangles: %d" % (color, len(meshes[color].tris)))
+    for color_number in (1, 2, 3, 4):
+        print("color %d triangles: %d" % (color_number, len(meshes[color_number].tris)))
     print("combined triangles: %d" % len(combined.tris))
 
 

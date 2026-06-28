@@ -6,7 +6,8 @@ import shutil
 import subprocess
 
 
-OUT_DIR = "/Users/willow/Documents/Codex/2026-06-27/mak/outputs"
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT_DIR = os.path.join(ROOT_DIR, "outputs")
 SIZE = 120.0
 BASE_THICKNESS = 4.0
 BASE_TOP = BASE_THICKNESS

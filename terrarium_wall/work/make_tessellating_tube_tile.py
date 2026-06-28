@@ -6,9 +6,10 @@ import shutil
 import subprocess
 
 
-OUT_DIR = "/Users/willow/Documents/Codex/2026-06-27/mak/outputs"
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT_DIR = os.path.join(ROOT_DIR, "outputs")
 INCH = 25.4
-TILE = 6.0 * INCH
+TILE = 4.0 * INCH
 BASE = 0.25 * INCH
 MAX_Z = 1.5 * INCH
 TUBE_MAX_HEIGHT = MAX_Z - BASE
