@@ -20,13 +20,13 @@ repos:
     hooks:
     -   id: trailing-whitespace
     -   id: check-added-large-files
-        args: [--maxkb=11000, --enforce-all]
+        args: [--maxkb=15000, --enforce-all]
     -   id: check-executables-have-shebangs
     -   id: check-shebang-scripts-are-executable
     -   id: mixed-line-ending
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.20.2
+    rev: v2.1.0
     hooks:
     -   id: mypy
         args:
@@ -47,7 +47,7 @@ repos:
   #     - id: circleci-config-validate
 
 -   repo: https://github.com/python-poetry/poetry
-    rev: 2.3.4
+    rev: 2.4.1
     hooks:
     -   id: poetry-check
     -   id: poetry-lock
@@ -71,7 +71,7 @@ repos:
     -   id: msg-issue-prefix
 
 -   repo: https://github.com/jsh9/pydoclint
-    rev: 0.8.3
+    rev: 0.8.6
     hooks:
     -   id: pydoclint
         args:
