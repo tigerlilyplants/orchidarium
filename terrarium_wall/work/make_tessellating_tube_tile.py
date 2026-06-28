@@ -137,21 +137,25 @@ def rect_inside_any_socket(x0, x1, y0, y1, rects):
 
 def add_base_with_bottom_ports(mesh):
     rects = socket_rects()
-    mesh.add_quad((0, 0, BASE), (TILE, 0, BASE), (TILE, TILE, BASE), (0, TILE, BASE))
-    mesh.add_quad((0, 0, 0), (TILE, 0, 0), (TILE, 0, BASE), (0, 0, BASE))
-    mesh.add_quad((TILE, 0, 0), (TILE, TILE, 0), (TILE, TILE, BASE), (TILE, 0, BASE))
-    mesh.add_quad((TILE, TILE, 0), (0, TILE, 0), (0, TILE, BASE), (TILE, TILE, BASE))
-    mesh.add_quad((0, TILE, 0), (0, 0, 0), (0, 0, BASE), (0, TILE, BASE))
-
     xs = sorted(set([0.0, TILE] + [v for r in rects for v in (r[0], r[1])]))
     ys = sorted(set([0.0, TILE] + [v for r in rects for v in (r[2], r[3])]))
     for xi in range(len(xs) - 1):
         for yi in range(len(ys) - 1):
             x0, x1 = xs[xi], xs[xi + 1]
             y0, y1 = ys[yi], ys[yi + 1]
+            mesh.add_quad((x0, y0, BASE), (x1, y0, BASE), (x1, y1, BASE), (x0, y1, BASE))
             if rect_inside_any_socket(x0, x1, y0, y1, rects):
                 continue
             mesh.add_quad((x0, y1, 0), (x1, y1, 0), (x1, y0, 0), (x0, y0, 0))
+
+    for xi in range(len(xs) - 1):
+        x0, x1 = xs[xi], xs[xi + 1]
+        mesh.add_quad((x0, 0, 0), (x1, 0, 0), (x1, 0, BASE), (x0, 0, BASE))
+        mesh.add_quad((x1, TILE, 0), (x0, TILE, 0), (x0, TILE, BASE), (x1, TILE, BASE))
+    for yi in range(len(ys) - 1):
+        y0, y1 = ys[yi], ys[yi + 1]
+        mesh.add_quad((TILE, y0, 0), (TILE, y1, 0), (TILE, y1, BASE), (TILE, y0, BASE))
+        mesh.add_quad((0, y1, 0), (0, y0, 0), (0, y0, BASE), (0, y1, BASE))
 
     for xmin, xmax, ymin, ymax in rects:
         z = SOCKET_DEPTH

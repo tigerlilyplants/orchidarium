@@ -14,34 +14,34 @@ BASE = base.BASE
 TUBE_MAX_HEIGHT = base.TUBE_MAX_HEIGHT
 SEED = 76127
 
-GRID = 9
-JITTER = 0.34
+POINT_COUNT = 81
+POINT_REJECTION_RADIUS = 7.2
+POINT_REJECTION_ATTEMPTS = 80000
 MIN_AREA = 20.0
 MAX_AREA = 360.0
-OUTER_BASE_SCALE = 0.54
-BOUNDARY_SCALE = 0.94
-OVERHANG_SCALES = (0.94, 0.94, 1.08, 1.72)
+OUTER_BASE_SCALE = 0.58
+BOUNDARY_SCALE = 0.99
 WALL = 1.00
 OUTER_MITER_LIMIT = 2.20
 NZ = 16
 TUBE_BASE_EMBED = 0.75
+HORN_FOOT_LOCK = 0.10
 INNER_OPEN_START = 0.12
 INNER_OPEN_END = 0.36
 POST_WIDTH = 18.0
 POST_INSIDE_CHAMFER = 8.0
 BASE_MARGIN = 0.35
 BASE_SMOOTHING = 4
-TOP_SMOOTHING = 4
+TOP_SMOOTHING = 3
 RIM_LIFT = 0.85
 RIM_INNER_DROP = 0.65
 RIM_WAVE = 0.32
 MAX_RIM_EXTRA = RIM_LIFT + RIM_WAVE * 1.45
 BODY_MAX_HEIGHT = TUBE_MAX_HEIGHT - MAX_RIM_EXTRA
+UNIFORM_TUBE_HEIGHT = 25.4
 BODY_COLLISION_SAMPLES = 13
 BODY_COLLISION_MIN_T = 0.18
 BODY_COLLISION_MAX_T = 0.93
-HEIGHT_LAYERS = (8.0, 14.0, 22.0, BODY_MAX_HEIGHT * 0.99)
-LAYER_CLEARANCE = 1.20
 
 
 def dist2(a, b):
@@ -117,15 +117,28 @@ def delaunay(points):
     return [tri for tri in tris if not (set(tri) & super_ids)]
 
 
-def jittered_periodic_points():
+def torus_distance(a, b):
+    dx = abs(a[0] - b[0])
+    dy = abs(a[1] - b[1])
+    dx = min(dx, TILE - dx)
+    dy = min(dy, TILE - dy)
+    return math.hypot(dx, dy)
+
+
+def rejection_periodic_points():
     rng = random.Random(SEED)
-    spacing = TILE / GRID
     central = []
-    for iy in range(GRID):
-        for ix in range(GRID):
-            x = (ix + 0.5 + rng.uniform(-JITTER, JITTER)) * spacing
-            y = (iy + 0.5 + rng.uniform(-JITTER, JITTER)) * spacing
-            central.append((x % TILE, y % TILE))
+    for _ in range(POINT_REJECTION_ATTEMPTS):
+        candidate = (rng.random() * TILE, rng.random() * TILE)
+        if all(torus_distance(candidate, point) >= POINT_REJECTION_RADIUS for point in central):
+            central.append(candidate)
+            if len(central) >= POINT_COUNT:
+                break
+    if len(central) != POINT_COUNT:
+        raise ValueError(
+            "Could not place %d points with %.2f mm rejection radius; placed %d"
+            % (POINT_COUNT, POINT_REJECTION_RADIUS, len(central))
+        )
 
     points = []
     for sx in (-1, 0, 1):
@@ -238,62 +251,9 @@ def rim_wave(cell, index, count):
     )
 
 
-def periodic_point_key(point):
-    return (round(point[0] % TILE, 4), round(point[1] % TILE, 4))
-
-
-def triangle_edge_keys(tri):
-    keys = [periodic_point_key(point) for point in tri]
-    return [tuple(sorted((keys[i], keys[(i + 1) % 3]))) for i in range(3)]
-
-
-def build_cell_adjacency(cells):
-    edge_to_cells = {}
-    for index, cell in enumerate(cells):
-        for edge in cell["edge_keys"]:
-            edge_to_cells.setdefault(edge, []).append(index)
-
-    adjacency = [set() for _ in cells]
-    for owners in edge_to_cells.values():
-        for i, owner_a in enumerate(owners):
-            for owner_b in owners[i + 1:]:
-                adjacency[owner_a].add(owner_b)
-                adjacency[owner_b].add(owner_a)
-    return adjacency
-
-
-def assign_height_layers(cells):
-    adjacency = build_cell_adjacency(cells)
-    colors = [-1] * len(cells)
-    counts = [0, 0, 0, 0]
-
-    for _ in cells:
-        uncolored = [index for index, color in enumerate(colors) if color < 0]
-        index = max(
-            uncolored,
-            key=lambda item: (
-                len({colors[neighbor] for neighbor in adjacency[item] if colors[neighbor] >= 0}),
-                len(adjacency[item]),
-                -item,
-            ),
-        )
-        used = {colors[neighbor] for neighbor in adjacency[index] if colors[neighbor] >= 0}
-        choices = [color for color in range(4) if color not in used]
-        if not choices:
-            raise ValueError("Delaunay triangulation could not be four-colored")
-        color = min(choices, key=lambda item: (counts[item], item))
-        colors[index] = color
-        counts[color] += 1
-
-    for index, color in enumerate(colors):
-        cells[index]["height_class"] = color
-        cells[index]["height"] = HEIGHT_LAYERS[color]
-    return adjacency
-
-
 def make_cells():
     rng = random.Random(SEED + 9)
-    points = jittered_periodic_points()
+    points = rejection_periodic_points()
     tris = delaunay(points)
     cells = []
     seen = set()
@@ -323,26 +283,16 @@ def make_cells():
         cells.append(
             {
                 "tri": tri,
-                "edge_keys": triangle_edge_keys(tri),
                 "centroid": centroid,
                 "base_center": loop_center(base_loop),
                 "base_loop": base_loop,
                 "boundary_loop": boundary_loop,
                 "top_loop": boundary_loop,
-                "height": HEIGHT_LAYERS[0],
-                "height_class": 0,
+                "height": UNIFORM_TUBE_HEIGHT,
                 "color": color,
                 "rim_phase": rng.uniform(0.0, 2.0 * math.pi),
                 "rim_phase2": rng.uniform(0.0, 2.0 * math.pi),
             }
-        )
-    assign_height_layers(cells)
-    for cell in cells:
-        cell["top_loop"] = eroded_loop(
-            cell["tri"],
-            cell["centroid"],
-            OVERHANG_SCALES[cell["height_class"]],
-            TOP_SMOOTHING,
         )
     return cells
 
@@ -377,23 +327,17 @@ def profile_t_for_z(cell, z):
     return (z - tube_bottom_z(cell)) / (cell["height"] + TUBE_BASE_EMBED)
 
 
-def layer_safe_t(cell):
-    height_class = cell["height_class"]
-    if height_class <= 0:
-        return 1.0
-    safe_height = HEIGHT_LAYERS[height_class - 1] + MAX_RIM_EXTRA + LAYER_CLEARANCE
-    return max(0.28, min(0.88, (safe_height + TUBE_BASE_EMBED) / (cell["height"] + TUBE_BASE_EMBED)))
+def horn_flare_mix(t):
+    if t <= HORN_FOOT_LOCK:
+        return 0.0
+    u = (t - HORN_FOOT_LOCK) / (1.0 - HORN_FOOT_LOCK)
+    u = max(0.0, min(1.0, u))
+    smooth = u * u * (3.0 - 2.0 * u)
+    return 0.22 * smooth + 0.78 * smooth * smooth
 
 
 def section_outer_loop(cell, t):
-    boundary_end = min(0.74, max(0.24, layer_safe_t(cell) * 0.86))
-    boundary_mix = base.smoothstep(0.02, boundary_end, t)
-    boundary_loop = lerp_loop(cell["base_loop"], cell["boundary_loop"], boundary_mix)
-    if cell["height_class"] <= 0:
-        return boundary_loop
-
-    overhang_mix = base.smoothstep(layer_safe_t(cell), 1.0, t)
-    return lerp_loop(boundary_loop, cell["top_loop"], overhang_mix)
+    return lerp_loop(cell["base_loop"], cell["top_loop"], horn_flare_mix(t))
 
 
 def outer_loop_at_t(cell, t):
@@ -577,11 +521,13 @@ def usable_inner_loop(outer, inner):
 
 
 def loop_wall_distance(outer, inner):
-    return min(
-        point_segment_distance(inner_point, outer[i], outer[(i + 1) % len(outer)])
-        for inner_point in inner
-        for i in range(len(outer))
-    )
+    distances = []
+    n = len(outer)
+    for i, inner_point in enumerate(inner):
+        for edge_index in (i - 1, i, i + 1):
+            j = edge_index % n
+            distances.append(point_segment_distance(inner_point, outer[j], outer[(j + 1) % n]))
+    return min(distances)
 
 
 def radial_inset_at_distance(outer, center, distance):
@@ -607,10 +553,22 @@ def radial_inset_loop(outer, distance):
 
 
 def inner_loop_from_outer(outer):
-    inner = inward_offset_loop(outer, WALL)
-    if usable_inner_loop(outer, inner) and loop_wall_distance(outer, inner) >= WALL * 0.98:
-        return inner
-    return radial_inset_loop(outer, WALL)
+    center = loop_center(outer)
+    if min(math.hypot(p[0] - center[0], p[1] - center[1]) for p in outer) <= WALL * 1.35:
+        return None
+
+    best = None
+    low = 0.08
+    high = 0.90
+    for _ in range(12):
+        scale = (low + high) * 0.5
+        inner = scaled_loop(outer, center, scale)
+        if usable_inner_loop(outer, inner) and loop_wall_distance(outer, inner) >= WALL * 0.98:
+            best = inner
+            low = scale
+        else:
+            high = scale
+    return best
 
 
 def loop_supports_wall(loop):
@@ -620,10 +578,19 @@ def loop_supports_wall(loop):
 def build_tube_sections(cell):
     height = cell["height"]
     sections = []
+    open_started = False
+    last_inner_loop = None
     for zi in range(NZ + 1):
         t = zi / NZ
         outer_loop = section_outer_loop(cell, t)
-        inner_loop = None if t < INNER_OPEN_START else inner_loop_from_outer(outer_loop)
+        inner_loop = None
+        if t >= INNER_OPEN_START:
+            inner_loop = inner_loop_from_outer(outer_loop)
+            if inner_loop is None and open_started:
+                inner_loop = last_inner_loop
+            if inner_loop is not None:
+                open_started = True
+                last_inner_loop = inner_loop
         z = BASE - TUBE_BASE_EMBED + (height + TUBE_BASE_EMBED) * t
         rim = base.smoothstep(0.66, 1.0, t)
         count = len(outer_loop)
@@ -681,8 +648,9 @@ def add_eroded_triangle_tube(mesh, cell):
     for i in range(n):
         j = (i + 1) % n
         mesh.add_quad(outer[NZ][i], outer[NZ][j], inner[NZ][j], inner[NZ][i])
-        if open_zi is not None:
-            mesh.add_quad(outer[open_zi][i], outer[open_zi][j], inner[open_zi][j], inner[open_zi][i])
+    if open_zi is not None:
+        for i in range(1, n - 1):
+            mesh.add_tri(inner[open_zi][0], inner[open_zi][i], inner[open_zi][i + 1])
 
 
 def polygons_overlap(poly_a, poly_b):
@@ -873,15 +841,15 @@ def write_readme(path, cells, overlaps, body_overlaps, base_overlaps, min_wall, 
     with open(path, "w", encoding="utf-8") as f:
         f.write("Delaunay eroded-boundary tube tile\n")
         f.write("==================================\n\n")
-        f.write("Alternate procedural approach: jittered periodic point field, pure-Python Delaunay triangulation, then eroded/smoothed triangle boundaries form the tube lips.\n")
+        f.write("Alternate procedural approach: periodic fixed-radius rejection-sampled point field, pure-Python Delaunay triangulation, then eroded/smoothed triangle boundaries form the tube lips.\n")
         f.write("Dimensions: %.1f mm x %.1f mm base tile, %.2f mm base, %.1f mm max height.\n" % (TILE, TILE, BASE, base.MAX_Z))
         f.write("The physical plate is exactly the same width as the periodic Delaunay domain; edge tube interiors may lean outward while their exterior bases stay on the plate.\n")
-        f.write("The Delaunay triangulation is four-colored into four deterministic height layers: %.1f, %.1f, %.1f, and %.1f mm above the base.\n" % HEIGHT_LAYERS)
-        f.write("Exterior cross-sections expand from smaller bases into Delaunay cell-boundary loops. Taller layers delay their overhang until above the layer below, then flare outward.\n")
+        f.write("All horns use a uniform %.1f mm body height and stay inside their eroded Delaunay cell boundary, with no intentional overhang into neighboring cells.\n" % UNIFORM_TUBE_HEIGHT)
+        f.write("Exterior cross-sections follow a smooth horn curve from smaller bases into Delaunay cell-boundary loops.\n")
         f.write("The tube body is built as a stack of increasing-height cross-sections. Each hollow section has an exterior loop and a %.2f mm inward wall target, then each ring is stitched only to the ring directly below it.\n" % WALL)
         f.write("Small bases are kept as solid stems until the horn cross-section is wide enough to support a hollow wall; a few small horns may remain capped solid.\n")
         f.write("Tube feet have a short solid vertical collar before the horn flare begins; the colored foot penetrates %.2f mm into the black base while the hollow opening starts above the plate surface to avoid tiny base slots.\n" % TUBE_BASE_EMBED)
-        f.write("No tube cells are filtered out after four-coloring; the horn geometry is generated directly from each cell's height layer.\n")
+        f.write("No tube cells are filtered out after triangulation; small cells are allowed to become solid or partially hollow horns.\n")
         f.write("Tube tops include a subtle uneven raised rim and lower inner edge, so the lip has an organic beveled curve instead of a flat cut.\n")
         f.write("Bambu Studio material mapping: color 1 = black base, color 2 = white tubes, color 3 = beige tubes, color 4 = orange tubes.\n")
         f.write("Color placement for tube colors 2-4 is randomized with fixed weighted probabilities, independent of tube height and geometry.\n")

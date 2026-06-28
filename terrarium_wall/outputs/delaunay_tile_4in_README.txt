@@ -1,19 +1,19 @@
 Delaunay eroded-boundary tube tile
 ==================================
 
-Alternate procedural approach: jittered periodic point field, pure-Python Delaunay triangulation, then eroded/smoothed triangle boundaries form the tube lips.
+Alternate procedural approach: periodic fixed-radius rejection-sampled point field, pure-Python Delaunay triangulation, then eroded/smoothed triangle boundaries form the tube lips.
 Dimensions: 101.6 mm x 101.6 mm base tile, 6.35 mm base, 38.1 mm max height.
 The physical plate is exactly the same width as the periodic Delaunay domain; edge tube interiors may lean outward while their exterior bases stay on the plate.
-The Delaunay triangulation is four-colored into four deterministic height layers: 8.0, 14.0, 22.0, and 30.1 mm above the base.
-Exterior cross-sections expand from smaller bases into Delaunay cell-boundary loops. Taller layers delay their overhang until above the layer below, then flare outward.
+All horns use a uniform 25.4 mm body height and stay inside their eroded Delaunay cell boundary, with no intentional overhang into neighboring cells.
+Exterior cross-sections follow a smooth horn curve from smaller bases into Delaunay cell-boundary loops.
 The tube body is built as a stack of increasing-height cross-sections. Each hollow section has an exterior loop and a 1.00 mm inward wall target, then each ring is stitched only to the ring directly below it.
 Small bases are kept as solid stems until the horn cross-section is wide enough to support a hollow wall; a few small horns may remain capped solid.
 Tube feet have a short solid vertical collar before the horn flare begins; the colored foot penetrates 0.75 mm into the black base while the hollow opening starts above the plate surface to avoid tiny base slots.
-No tube cells are filtered out after four-coloring; the horn geometry is generated directly from each cell's height layer.
+No tube cells are filtered out after triangulation; small cells are allowed to become solid or partially hollow horns.
 Tube tops include a subtle uneven raised rim and lower inner edge, so the lip has an organic beveled curve instead of a flat cut.
 Bambu Studio material mapping: color 1 = black base, color 2 = white tubes, color 3 = beige tubes, color 4 = orange tubes.
 Color placement for tube colors 2-4 is randomized with fixed weighted probabilities, independent of tube height and geometry.
-Audit: 0 base footprint overlaps; 0.98 mm minimum hollow wall; 0 sampled mid-body overlaps; 250 top-overhang pairs; estimated top coverage 85.6%.
+Audit: 0 base footprint overlaps; 0.98 mm minimum hollow wall; 0 sampled mid-body overlaps; 0 top-overhang pairs; estimated top coverage 71.0%.
 
 Files:
 - delaunay_tile_4in_color_1_black.stl: black base
