@@ -18,27 +18,40 @@ GRID = 9
 JITTER = 0.34
 MIN_AREA = 20.0
 MAX_AREA = 360.0
-BASE_SCALE = 0.54
-TOP_SCALE = 1.08
-WALL = 1.05
-NZ = 8
+OUTER_BASE_SCALE = 0.54
+BOUNDARY_SCALE = 0.94
+OVERHANG_SCALES = (0.94, 0.94, 1.08, 1.72)
+WALL = 1.00
+OUTER_MITER_LIMIT = 2.20
+NZ = 16
+TUBE_BASE_EMBED = 0.75
+INNER_OPEN_START = 0.12
+INNER_OPEN_END = 0.36
 POST_WIDTH = 18.0
 POST_INSIDE_CHAMFER = 8.0
 BASE_MARGIN = 0.35
 BASE_SMOOTHING = 4
-TOP_SMOOTHING = 3
+TOP_SMOOTHING = 4
 RIM_LIFT = 0.85
 RIM_INNER_DROP = 0.65
 RIM_WAVE = 0.32
 MAX_RIM_EXTRA = RIM_LIFT + RIM_WAVE * 1.45
 BODY_MAX_HEIGHT = TUBE_MAX_HEIGHT - MAX_RIM_EXTRA
-HORN_FLARE_START = 0.30
+BODY_COLLISION_SAMPLES = 13
+BODY_COLLISION_MIN_T = 0.18
+BODY_COLLISION_MAX_T = 0.93
+HEIGHT_LAYERS = (8.0, 14.0, 22.0, BODY_MAX_HEIGHT * 0.99)
+LAYER_CLEARANCE = 1.20
 
 
 def dist2(a, b):
     dx = a[0] - b[0]
     dy = a[1] - b[1]
     return dx * dx + dy * dy
+
+
+def cross2(a, b):
+    return a[0] * b[1] - a[1] * b[0]
 
 
 def signed_area(poly):
@@ -145,6 +158,10 @@ def loop_radius(loop, centroid):
     return sum(math.hypot(p[0] - centroid[0], p[1] - centroid[1]) for p in loop) / len(loop)
 
 
+def loop_center(loop):
+    return (sum(p[0] for p in loop) / len(loop), sum(p[1] for p in loop) / len(loop))
+
+
 def loop_bounds(loop):
     xs = [p[0] for p in loop]
     ys = [p[1] for p in loop]
@@ -153,6 +170,27 @@ def loop_bounds(loop):
 
 def offset_loop(loop, dx, dy):
     return [(p[0] + dx, p[1] + dy) for p in loop]
+
+
+def localize_point(point, center):
+    x, y = point
+    while x - center[0] > TILE / 2.0:
+        x -= TILE
+    while x - center[0] < -TILE / 2.0:
+        x += TILE
+    while y - center[1] > TILE / 2.0:
+        y -= TILE
+    while y - center[1] < -TILE / 2.0:
+        y += TILE
+    return (x, y)
+
+
+def localize_triangle(tri, center):
+    return [localize_point(point, center) for point in tri]
+
+
+def shrink_loop(loop, centroid, factor):
+    return [(centroid[0] + (p[0] - centroid[0]) * factor, centroid[1] + (p[1] - centroid[1]) * factor) for p in loop]
 
 
 def fit_loop_inside_tile(loop, margin=BASE_MARGIN):
@@ -182,10 +220,6 @@ def lerp_point(a, b, t):
     return (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)
 
 
-def horn_flare_mix(t):
-    return base.smoothstep(HORN_FLARE_START, 1.0, t)
-
-
 def color_for_cell(x, y, rng):
     del x, y
     pick = rng.random()
@@ -204,6 +238,59 @@ def rim_wave(cell, index, count):
     )
 
 
+def periodic_point_key(point):
+    return (round(point[0] % TILE, 4), round(point[1] % TILE, 4))
+
+
+def triangle_edge_keys(tri):
+    keys = [periodic_point_key(point) for point in tri]
+    return [tuple(sorted((keys[i], keys[(i + 1) % 3]))) for i in range(3)]
+
+
+def build_cell_adjacency(cells):
+    edge_to_cells = {}
+    for index, cell in enumerate(cells):
+        for edge in cell["edge_keys"]:
+            edge_to_cells.setdefault(edge, []).append(index)
+
+    adjacency = [set() for _ in cells]
+    for owners in edge_to_cells.values():
+        for i, owner_a in enumerate(owners):
+            for owner_b in owners[i + 1:]:
+                adjacency[owner_a].add(owner_b)
+                adjacency[owner_b].add(owner_a)
+    return adjacency
+
+
+def assign_height_layers(cells):
+    adjacency = build_cell_adjacency(cells)
+    colors = [-1] * len(cells)
+    counts = [0, 0, 0, 0]
+
+    for _ in cells:
+        uncolored = [index for index, color in enumerate(colors) if color < 0]
+        index = max(
+            uncolored,
+            key=lambda item: (
+                len({colors[neighbor] for neighbor in adjacency[item] if colors[neighbor] >= 0}),
+                len(adjacency[item]),
+                -item,
+            ),
+        )
+        used = {colors[neighbor] for neighbor in adjacency[index] if colors[neighbor] >= 0}
+        choices = [color for color in range(4) if color not in used]
+        if not choices:
+            raise ValueError("Delaunay triangulation could not be four-colored")
+        color = min(choices, key=lambda item: (counts[item], item))
+        colors[index] = color
+        counts[color] += 1
+
+    for index, color in enumerate(colors):
+        cells[index]["height_class"] = color
+        cells[index]["height"] = HEIGHT_LAYERS[color]
+    return adjacency
+
+
 def make_cells():
     rng = random.Random(SEED + 9)
     points = jittered_periodic_points()
@@ -211,97 +298,391 @@ def make_cells():
     cells = []
     seen = set()
     for tri_ids in tris:
-        tri = [points[i] for i in tri_ids]
+        raw_tri = [points[i] for i in tri_ids]
+        raw_cx = sum(p[0] for p in raw_tri) / 3.0
+        raw_cy = sum(p[1] for p in raw_tri) / 3.0
+        if not (0.0 <= raw_cx < TILE and 0.0 <= raw_cy < TILE):
+            continue
+        tri = localize_triangle(raw_tri, (raw_cx, raw_cy))
         area = triangle_area(tri)
         if area < MIN_AREA or area > MAX_AREA:
             continue
         cx = sum(p[0] for p in tri) / 3.0
         cy = sum(p[1] for p in tri) / 3.0
-        if not (0.0 <= cx < TILE and 0.0 <= cy < TILE):
-            continue
-        key = (round(cx, 3), round(cy, 3))
+        key = (round(cx % TILE, 3), round(cy % TILE, 3))
         if key in seen:
             continue
         seen.add(key)
         centroid = (cx, cy)
-        base_loop, base_shift = fit_loop_inside_tile(eroded_loop(tri, centroid, BASE_SCALE, BASE_SMOOTHING))
+        base_outer_loop = eroded_loop(tri, centroid, OUTER_BASE_SCALE, BASE_SMOOTHING)
+        base_loop, base_shift = fit_loop_inside_tile(base_outer_loop)
         if base_loop is None:
             continue
-        top_loop = eroded_loop(tri, centroid, TOP_SCALE, TOP_SMOOTHING)
-        base_center = (centroid[0] + base_shift[0], centroid[1] + base_shift[1])
-        radius = loop_radius(top_loop, centroid)
-        height = min(BODY_MAX_HEIGHT * 0.99, rng.uniform(14.0, 27.5) * (0.82 + min(1.0, radius / 16.0) * 0.28))
+        boundary_loop = eroded_loop(tri, centroid, BOUNDARY_SCALE, TOP_SMOOTHING)
         color = color_for_cell(cx % TILE, cy % TILE, rng)
         cells.append(
             {
                 "tri": tri,
+                "edge_keys": triangle_edge_keys(tri),
                 "centroid": centroid,
-                "base_center": base_center,
+                "base_center": loop_center(base_loop),
                 "base_loop": base_loop,
-                "top_loop": top_loop,
-                "height": min(BODY_MAX_HEIGHT * 0.99, height),
+                "boundary_loop": boundary_loop,
+                "top_loop": boundary_loop,
+                "height": HEIGHT_LAYERS[0],
+                "height_class": 0,
                 "color": color,
                 "rim_phase": rng.uniform(0.0, 2.0 * math.pi),
                 "rim_phase2": rng.uniform(0.0, 2.0 * math.pi),
             }
         )
-    compress_lower_tube_heights(cells)
+    assign_height_layers(cells)
+    for cell in cells:
+        cell["top_loop"] = eroded_loop(
+            cell["tri"],
+            cell["centroid"],
+            OVERHANG_SCALES[cell["height_class"]],
+            TOP_SMOOTHING,
+        )
     return cells
 
 
-def compress_lower_tube_heights(cells):
-    if len(cells) < 2:
-        return
-    ordered = sorted(cells, key=lambda cell: cell["height"])
-    cutoff = max(1, int(len(ordered) * 0.55))
-    for index, cell in enumerate(ordered[:cutoff]):
-        alpha = index / max(1, cutoff - 1)
-        factor = 0.82 + 0.13 * alpha
-        cell["height"] *= factor
+def resolve_base_footprint_overlaps(cells):
+    for _ in range(36):
+        changed_indices = set()
+        outer_loops = [cell["base_loop"] for cell in cells]
+        for i, cell_a in enumerate(cells):
+            outer_a = outer_loops[i]
+            for j, cell_b in enumerate(cells[i + 1:], start=i + 1):
+                outer_b = outer_loops[j]
+                if loops_overlap_periodic(outer_a, outer_b):
+                    changed_indices.add(i)
+                    changed_indices.add(j)
+        if not changed_indices:
+            return
+        for index in changed_indices:
+            cells[index]["base_loop"] = shrink_loop(cells[index]["base_loop"], cells[index]["base_center"], 0.92)
+
+
+def tube_bottom_z(cell):
+    del cell
+    return BASE - TUBE_BASE_EMBED
+
+
+def tube_top_z(cell):
+    return BASE + cell["height"]
+
+
+def profile_t_for_z(cell, z):
+    return (z - tube_bottom_z(cell)) / (cell["height"] + TUBE_BASE_EMBED)
+
+
+def layer_safe_t(cell):
+    height_class = cell["height_class"]
+    if height_class <= 0:
+        return 1.0
+    safe_height = HEIGHT_LAYERS[height_class - 1] + MAX_RIM_EXTRA + LAYER_CLEARANCE
+    return max(0.28, min(0.88, (safe_height + TUBE_BASE_EMBED) / (cell["height"] + TUBE_BASE_EMBED)))
+
+
+def section_outer_loop(cell, t):
+    boundary_end = min(0.74, max(0.24, layer_safe_t(cell) * 0.86))
+    boundary_mix = base.smoothstep(0.02, boundary_end, t)
+    boundary_loop = lerp_loop(cell["base_loop"], cell["boundary_loop"], boundary_mix)
+    if cell["height_class"] <= 0:
+        return boundary_loop
+
+    overhang_mix = base.smoothstep(layer_safe_t(cell), 1.0, t)
+    return lerp_loop(boundary_loop, cell["top_loop"], overhang_mix)
+
+
+def outer_loop_at_t(cell, t):
+    return section_outer_loop(cell, t)
+
+
+def loops_overlap_periodic(loop_a, loop_b, bounds_a=None, bounds_b=None):
+    if loop_a is None or loop_b is None:
+        return False
+    if bounds_a is None:
+        bounds_a = loop_bounds(loop_a)
+    if bounds_b is None:
+        bounds_b = loop_bounds(loop_b)
+    ax0, ax1, ay0, ay1 = bounds_a
+    bx0_raw, bx1_raw, by0_raw, by1_raw = bounds_b
+    for sx in (-TILE, 0.0, TILE):
+        for sy in (-TILE, 0.0, TILE):
+            bx0 = bx0_raw + sx
+            bx1 = bx1_raw + sx
+            by0 = by0_raw + sy
+            by1 = by1_raw + sy
+            if ax1 <= bx0 or bx1 <= ax0 or ay1 <= by0 or by1 <= ay0:
+                continue
+            shifted = [(p[0] + sx, p[1] + sy) for p in loop_b]
+            if polygons_overlap(loop_a, shifted):
+                return True
+    return False
+
+
+def body_overlap_pairs(cells, stop_after_first=False):
+    overlaps = []
+    bottom_z = BASE - TUBE_BASE_EMBED
+    max_top_z = max((tube_top_z(cell) for cell in cells), default=bottom_z)
+    sample_zs = [
+        bottom_z + (max_top_z - bottom_z) * (sample + 0.5) / BODY_COLLISION_SAMPLES
+        for sample in range(BODY_COLLISION_SAMPLES)
+    ]
+    sampled = []
+    for cell in cells:
+        rings = []
+        for z in sample_zs:
+            t = profile_t_for_z(cell, z)
+            if t < BODY_COLLISION_MIN_T or t > BODY_COLLISION_MAX_T or z > tube_top_z(cell):
+                rings.append(None)
+                continue
+            loop = outer_loop_at_t(cell, t)
+            rings.append(None if loop is None else (loop, loop_bounds(loop)))
+        sampled.append(rings)
+    for i, cell_a in enumerate(cells):
+        for j, cell_b in enumerate(cells[i + 1:], start=i + 1):
+            for sample, z in enumerate(sample_zs):
+                ring_a = sampled[i][sample]
+                ring_b = sampled[j][sample]
+                if ring_a is None or ring_b is None:
+                    continue
+                if loops_overlap_periodic(ring_a[0], ring_b[0], ring_a[1], ring_b[1]):
+                    overlaps.append((i, j, z))
+                    if stop_after_first:
+                        return overlaps
+                    break
+    return overlaps
 
 
 def scaled_loop(loop, centroid, factor):
     return [(centroid[0] + (p[0] - centroid[0]) * factor, centroid[1] + (p[1] - centroid[1]) * factor) for p in loop]
 
 
-def add_eroded_triangle_tube(mesh, cell):
-    centroid = cell["centroid"]
-    base_center = cell["base_center"]
-    height = cell["height"]
-    outer = []
+def line_intersection(a0, a1, b0, b1):
+    ad = (a1[0] - a0[0], a1[1] - a0[1])
+    bd = (b1[0] - b0[0], b1[1] - b0[1])
+    denom = cross2(ad, bd)
+    if abs(denom) < 1e-9:
+        return None
+    delta = (b0[0] - a0[0], b0[1] - a0[1])
+    t = cross2(delta, bd) / denom
+    return (a0[0] + ad[0] * t, a0[1] + ad[1] * t)
+
+
+def point_inside_polygon(poly, point):
+    inside = False
+    j = len(poly) - 1
+    x, y = point
+    for i, pi in enumerate(poly):
+        pj = poly[j]
+        if point_segment_distance(point, pi, pj) < 1e-6:
+            return True
+        if ((pi[1] > y) != (pj[1] > y)) and (
+            x < (pj[0] - pi[0]) * (y - pi[1]) / (pj[1] - pi[1] + 1e-12) + pi[0]
+        ):
+            inside = not inside
+        j = i
+    return inside
+
+
+def segments_intersect(a, b, c, d):
+    def orient(p, q, r):
+        return cross2((q[0] - p[0], q[1] - p[1]), (r[0] - p[0], r[1] - p[1]))
+
+    ab_c = orient(a, b, c)
+    ab_d = orient(a, b, d)
+    cd_a = orient(c, d, a)
+    cd_b = orient(c, d, b)
+    return ab_c * ab_d < -1e-8 and cd_a * cd_b < -1e-8
+
+
+def polygon_self_intersects(poly):
+    n = len(poly)
+    for i in range(n):
+        a = poly[i]
+        b = poly[(i + 1) % n]
+        for j in range(i + 1, n):
+            if j in (i, (i + 1) % n) or i == (j + 1) % n:
+                continue
+            c = poly[j]
+            d = poly[(j + 1) % n]
+            if segments_intersect(a, b, c, d):
+                return True
+    return False
+
+
+def inward_offset_loop(loop, wall):
+    area = signed_area(loop)
+    sign = 1.0 if area >= 0.0 else -1.0
+    lines = []
+    normals = []
+    for i, p in enumerate(loop):
+        q = loop[(i + 1) % len(loop)]
+        dx = q[0] - p[0]
+        dy = q[1] - p[1]
+        length = max(1e-9, math.hypot(dx, dy))
+        normal = (-dy / length * sign, dx / length * sign)
+        normals.append(normal)
+        lines.append(
+            (
+                (p[0] + normal[0] * wall, p[1] + normal[1] * wall),
+                (q[0] + normal[0] * wall, q[1] + normal[1] * wall),
+            )
+        )
+
     inner = []
+    for i in range(len(loop)):
+        hit = line_intersection(lines[i - 1][0], lines[i - 1][1], lines[i][0], lines[i][1])
+        if hit is None:
+            return None
+        miter_length = math.hypot(hit[0] - loop[i][0], hit[1] - loop[i][1])
+        miter_cap = abs(wall) * OUTER_MITER_LIMIT
+        if wall < 0.0 and miter_length > miter_cap:
+            offset_a = (normals[i - 1][0] * wall, normals[i - 1][1] * wall)
+            offset_b = (normals[i][0] * wall, normals[i][1] * wall)
+            bisector = (offset_a[0] + offset_b[0], offset_a[1] + offset_b[1])
+            length = math.hypot(bisector[0], bisector[1])
+            if length < 1e-9:
+                bisector = offset_b
+                length = max(1e-9, math.hypot(bisector[0], bisector[1]))
+            hit = (loop[i][0] + bisector[0] / length * miter_cap, loop[i][1] + bisector[1] / length * miter_cap)
+        inner.append(hit)
+    return inner
+
+
+def smooth_loop(poly, passes=1):
+    pts = poly[:]
+    for _ in range(passes):
+        pts = [
+            (
+                p[0] * 0.50 + pts[i - 1][0] * 0.25 + pts[(i + 1) % len(pts)][0] * 0.25,
+                p[1] * 0.50 + pts[i - 1][1] * 0.25 + pts[(i + 1) % len(pts)][1] * 0.25,
+            )
+            for i, p in enumerate(pts)
+        ]
+    return pts
+
+
+def usable_inner_loop(outer, inner):
+    if inner is None or len(inner) != len(outer):
+        return False
+    if signed_area(outer) * signed_area(inner) <= 0.0:
+        return False
+    if polygon_self_intersects(inner):
+        return False
+    return all(point_inside_polygon(outer, point) for point in inner)
+
+
+def loop_wall_distance(outer, inner):
+    return min(
+        point_segment_distance(inner_point, outer[i], outer[(i + 1) % len(outer)])
+        for inner_point in inner
+        for i in range(len(outer))
+    )
+
+
+def radial_inset_at_distance(outer, center, distance):
+    inner = []
+    for p in outer:
+        dx = center[0] - p[0]
+        dy = center[1] - p[1]
+        length = math.hypot(dx, dy)
+        if length <= distance * 1.02:
+            return None
+        inner.append((p[0] + dx / length * distance, p[1] + dy / length * distance))
+    return inner
+
+
+def radial_inset_loop(outer, distance):
+    center = loop_center(outer)
+    for multiplier in (1.45, 1.7, 1.95, 2.2, 2.45):
+        inset = distance * multiplier
+        inner = radial_inset_at_distance(outer, center, inset)
+        if inner is not None and usable_inner_loop(outer, inner) and loop_wall_distance(outer, inner) >= distance * 0.98:
+            return inner
+    return None
+
+
+def inner_loop_from_outer(outer):
+    inner = inward_offset_loop(outer, WALL)
+    if usable_inner_loop(outer, inner) and loop_wall_distance(outer, inner) >= WALL * 0.98:
+        return inner
+    return radial_inset_loop(outer, WALL)
+
+
+def loop_supports_wall(loop):
+    return inner_loop_from_outer(loop) is not None
+
+
+def build_tube_sections(cell):
+    height = cell["height"]
+    sections = []
     for zi in range(NZ + 1):
         t = zi / NZ
-        mix = horn_flare_mix(t)
-        loop = lerp_loop(cell["base_loop"], cell["top_loop"], mix)
-        center = lerp_point(base_center, centroid, mix)
-        radius = max(1.0, loop_radius(loop, center))
-        inner_factor = max(0.18, (radius - WALL) / radius)
-        inner_loop = scaled_loop(loop, center, inner_factor)
-        z = BASE + height * t
+        outer_loop = section_outer_loop(cell, t)
+        inner_loop = None if t < INNER_OPEN_START else inner_loop_from_outer(outer_loop)
+        z = BASE - TUBE_BASE_EMBED + (height + TUBE_BASE_EMBED) * t
         rim = base.smoothstep(0.66, 1.0, t)
-        count = len(loop)
+        count = len(outer_loop)
         outer_ring = []
-        inner_ring = []
-        for i, p in enumerate(loop):
+        for i, p in enumerate(outer_loop):
             lift = rim * (RIM_LIFT + rim_wave(cell, i, count))
             outer_ring.append((p[0], p[1], z + lift))
-        for i, p in enumerate(inner_loop):
-            lift = rim * (RIM_LIFT - RIM_INNER_DROP + rim_wave(cell, i, count) * 0.45)
-            inner_ring.append((p[0], p[1], z + lift))
-        outer.append(outer_ring)
-        inner.append(inner_ring)
+        inner_ring = None
+        if inner_loop is not None:
+            inner_ring = []
+            for i, p in enumerate(inner_loop):
+                lift = rim * (RIM_LIFT - RIM_INNER_DROP + rim_wave(cell, i, count) * 0.45)
+                inner_ring.append((p[0], p[1], z + lift))
+        sections.append(
+            {
+                "t": t,
+                "outer_loop": outer_loop,
+                "inner_loop": inner_loop,
+                "outer_ring": outer_ring,
+                "inner_ring": inner_ring,
+                "rim": rim,
+                "z": z,
+            }
+        )
+    return sections
+
+
+def tube_supports_fixed_outer_offset(cell):
+    sections = build_tube_sections(cell)
+    return sections is not None and sections[-1]["inner_ring"] is not None
+
+
+def add_eroded_triangle_tube(mesh, cell):
+    sections = build_tube_sections(cell)
+    outer = [section["outer_ring"] for section in sections]
+    inner = [section["inner_ring"] for section in sections]
 
     n = len(outer[0])
+    open_zi = next(
+        (i for i, section in enumerate(sections) if section["t"] >= INNER_OPEN_START and section["inner_ring"] is not None),
+        None,
+    )
     for zi in range(NZ):
         for i in range(n):
             j = (i + 1) % n
-            mesh.add_quad(outer[zi][i], outer[zi + 1][i], outer[zi + 1][j], outer[zi][j])
-            mesh.add_quad(inner[zi][j], inner[zi + 1][j], inner[zi + 1][i], inner[zi][i])
+            mesh.add_quad(outer[zi][i], outer[zi][j], outer[zi + 1][j], outer[zi + 1][i])
+            if inner[zi] is not None and inner[zi + 1] is not None:
+                mesh.add_quad(inner[zi][j], inner[zi][i], inner[zi + 1][i], inner[zi + 1][j])
+    for i in range(1, n - 1):
+        mesh.add_tri(outer[0][0], outer[0][i + 1], outer[0][i])
+    if inner[NZ] is None:
+        for i in range(1, n - 1):
+            mesh.add_tri(outer[NZ][0], outer[NZ][i], outer[NZ][i + 1])
+        return
     for i in range(n):
         j = (i + 1) % n
         mesh.add_quad(outer[NZ][i], outer[NZ][j], inner[NZ][j], inner[NZ][i])
-        mesh.add_quad(outer[0][j], outer[0][i], inner[0][i], inner[0][j])
+        if open_zi is not None:
+            mesh.add_quad(outer[open_zi][i], outer[open_zi][j], inner[open_zi][j], inner[open_zi][i])
 
 
 def polygons_overlap(poly_a, poly_b):
@@ -325,6 +706,7 @@ def polygons_overlap(poly_a, poly_b):
 
 def overlap_audit(cells):
     top_loops = [c["top_loop"] for c in cells]
+    top_loops = [loop for loop in top_loops if loop is not None]
     overlaps = 0
     for i, a in enumerate(top_loops):
         for b in top_loops[i + 1:]:
@@ -340,9 +722,47 @@ def overlap_audit(cells):
     return overlaps
 
 
+def base_overlap_audit(cells):
+    overlaps = 0
+    base_loops = [c["base_loop"] for c in cells]
+    base_loops = [loop for loop in base_loops if loop is not None]
+    for i, a in enumerate(base_loops):
+        for b in base_loops[i + 1:]:
+            if loops_overlap_periodic(a, b):
+                overlaps += 1
+    return overlaps
+
+
+def point_segment_distance(point, a, b):
+    ab = (b[0] - a[0], b[1] - a[1])
+    ap = (point[0] - a[0], point[1] - a[1])
+    denom = ab[0] * ab[0] + ab[1] * ab[1]
+    if denom < 1e-12:
+        return math.hypot(point[0] - a[0], point[1] - a[1])
+    t = max(0.0, min(1.0, (ap[0] * ab[0] + ap[1] * ab[1]) / denom))
+    closest = (a[0] + ab[0] * t, a[1] + ab[1] * t)
+    return math.hypot(point[0] - closest[0], point[1] - closest[1])
+
+
+def hollow_wall_audit(cells):
+    walls = []
+    for cell in cells:
+        sections = build_tube_sections(cell)
+        if sections is None:
+            continue
+        for section in sections:
+            outer = section["outer_loop"]
+            inner = section["inner_loop"]
+            if inner is None:
+                continue
+            walls.append(loop_wall_distance(outer, inner))
+    return min(walls) if walls else 0.0
+
+
 def coverage_estimate(cells, samples=25000):
     rng = random.Random(42)
     top_loops = [c["top_loop"] for c in cells]
+    top_loops = [loop for loop in top_loops if loop is not None]
     hits = 0
     for _ in range(samples):
         x = rng.random() * TILE
@@ -382,7 +802,9 @@ def write_preview(path, cells, tiled=False):
             for tx in range(tiles):
                 for c in sorted(cells, key=lambda item: item["height"]):
                     loop = c["top_loop"]
-                    inner = scaled_loop(loop, c["centroid"], max(0.2, (loop_radius(loop, c["centroid"]) - WALL) / max(1.0, loop_radius(loop, c["centroid"]))))
+                    inner = inner_loop_from_outer(loop)
+                    if inner is None:
+                        continue
                     points = " ".join("%.3f,%.3f" % (p[0] + tx * TILE, (TILE - p[1]) + ty * TILE) for p in loop)
                     inner_points = " ".join("%.3f,%.3f" % (p[0] + tx * TILE, (TILE - p[1]) + ty * TILE) for p in inner)
                     f.write('<polygon points="%s" fill="%s" stroke="#4d352b" stroke-width="0.35" stroke-opacity="0.18"/>\n' % (points, palette[c["color"]]))
@@ -446,20 +868,24 @@ def make_box_corner_post():
     return mesh
 
 
-def write_readme(path, cells, overlaps, coverage):
+def write_readme(path, cells, overlaps, body_overlaps, base_overlaps, min_wall, coverage):
     counts = {number: sum(1 for c in cells if c["color"] == number) for number in (2, 3, 4)}
     with open(path, "w", encoding="utf-8") as f:
         f.write("Delaunay eroded-boundary tube tile\n")
         f.write("==================================\n\n")
         f.write("Alternate procedural approach: jittered periodic point field, pure-Python Delaunay triangulation, then eroded/smoothed triangle boundaries form the tube lips.\n")
         f.write("Dimensions: %.1f mm x %.1f mm base tile, %.2f mm base, %.1f mm max height.\n" % (TILE, TILE, BASE, base.MAX_Z))
-        f.write("The physical plate is exactly the same width as the periodic Delaunay domain; edge cells use wider inward-shifted bases and lean outward to their original top loops.\n")
-        f.write("Top loops expand past the eroded Delaunay boundaries for a denser packed canopy; taller tubes may overhang shorter neighbors.\n")
-        f.write("The tube body uses a horn-flare curve: wider bases, slower lower growth, then a later outward flare near the top.\n")
+        f.write("The physical plate is exactly the same width as the periodic Delaunay domain; edge tube interiors may lean outward while their exterior bases stay on the plate.\n")
+        f.write("The Delaunay triangulation is four-colored into four deterministic height layers: %.1f, %.1f, %.1f, and %.1f mm above the base.\n" % HEIGHT_LAYERS)
+        f.write("Exterior cross-sections expand from smaller bases into Delaunay cell-boundary loops. Taller layers delay their overhang until above the layer below, then flare outward.\n")
+        f.write("The tube body is built as a stack of increasing-height cross-sections. Each hollow section has an exterior loop and a %.2f mm inward wall target, then each ring is stitched only to the ring directly below it.\n" % WALL)
+        f.write("Small bases are kept as solid stems until the horn cross-section is wide enough to support a hollow wall; a few small horns may remain capped solid.\n")
+        f.write("Tube feet have a short solid vertical collar before the horn flare begins; the colored foot penetrates %.2f mm into the black base while the hollow opening starts above the plate surface to avoid tiny base slots.\n" % TUBE_BASE_EMBED)
+        f.write("No tube cells are filtered out after four-coloring; the horn geometry is generated directly from each cell's height layer.\n")
         f.write("Tube tops include a subtle uneven raised rim and lower inner edge, so the lip has an organic beveled curve instead of a flat cut.\n")
         f.write("Bambu Studio material mapping: color 1 = black base, color 2 = white tubes, color 3 = beige tubes, color 4 = orange tubes.\n")
         f.write("Color placement for tube colors 2-4 is randomized with fixed weighted probabilities, independent of tube height and geometry.\n")
-        f.write("Audit: %d allowed top-overhang pairs; estimated top coverage %.1f%%.\n\n" % (overlaps, coverage * 100.0))
+        f.write("Audit: %d base footprint overlaps; %.2f mm minimum hollow wall; %d sampled mid-body overlaps; %d top-overhang pairs; estimated top coverage %.1f%%.\n\n" % (base_overlaps, min_wall, body_overlaps, overlaps, coverage * 100.0))
         f.write("Files:\n")
         f.write("- delaunay_tile_4in_color_1_black.stl: black base\n")
         f.write("- delaunay_tile_4in_color_2_white.stl: %d white tubes\n" % counts[2])
@@ -497,6 +923,9 @@ def main():
     make_box_corner_post().write_ascii_stl(os.path.join(OUT_DIR, "delaunay_tile_box_corner_post.stl"), "delaunay_tile_box_corner_post")
 
     overlaps = overlap_audit(cells)
+    body_overlaps = len(body_overlap_pairs(cells))
+    base_overlaps = base_overlap_audit(cells)
+    min_wall = hollow_wall_audit(cells)
     coverage = coverage_estimate(cells)
     top_svg = os.path.join(OUT_DIR, "delaunay_tile_4in_top_preview.svg")
     tess_svg = os.path.join(OUT_DIR, "delaunay_tile_4in_tessellation_preview.svg")
@@ -504,9 +933,12 @@ def main():
     write_preview(tess_svg, cells, tiled=True)
     write_png_for_svg(top_svg)
     write_png_for_svg(tess_svg)
-    write_readme(os.path.join(OUT_DIR, "delaunay_tile_4in_README.txt"), cells, overlaps, coverage)
+    write_readme(os.path.join(OUT_DIR, "delaunay_tile_4in_README.txt"), cells, overlaps, body_overlaps, base_overlaps, min_wall, coverage)
     print("Generated %d Delaunay eroded tube cells" % len(cells))
-    print("allowed top-overhang pairs: %d" % overlaps)
+    print("base footprint overlaps: %d" % base_overlaps)
+    print("minimum hollow wall: %.2f mm" % min_wall)
+    print("sampled mid-body overlaps: %d" % body_overlaps)
+    print("top-overhang pairs: %d" % overlaps)
     print("estimated top coverage: %.1f%%" % (coverage * 100.0))
     for color_number in (1, 2, 3, 4):
         print("color %d triangles: %d" % (color_number, len(meshes[color_number].tris)))
