@@ -13,7 +13,7 @@ No tube cells are filtered out after triangulation; small cells are allowed to b
 Tube tops include a subtle uneven raised rim and lower inner edge, so the lip has an organic beveled curve instead of a flat cut.
 Bambu Studio material mapping: color 1 = black base, color 2 = white tubes, color 3 = beige tubes, color 4 = orange tubes.
 Color placement for tube colors 2-4 is randomized with fixed weighted probabilities, independent of tube height and geometry.
-Audit: 0 base footprint overlaps; 0.98 mm minimum hollow wall; 0 sampled mid-body overlaps; 0 top-overhang pairs; estimated top coverage 71.0%.
+Audit: 0 base footprint overlaps; 0.98 mm minimum hollow wall; 0 sampled mid-body overlaps; 0 top-overhang pairs; estimated top coverage 72.9%.
 
 Files:
 - delaunay_tile_4in_color_1_black.stl: black base
