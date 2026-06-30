@@ -1249,6 +1249,24 @@ def add_clipped_post_socket_ring(mesh, body, socket_poly, depth):
             tile.add_extruded_polygon(mesh, piece, 0.0, depth)
 
 
+def add_corner_post_face_stud_x(mesh, x0, y0, z0):
+    s = base.STUD_SIZE / 2.0
+    reach = base.STUD_HEIGHT
+    x1 = x0 + reach
+    base.add_box(mesh, x0, x1, y0 - s, y0 + s, z0 - s, z0 + s)
+    rib = 0.45
+    base.add_box(mesh, x0 + reach * 0.45, x1 - 0.25, y0 - s - rib, y0 + s + rib, z0 - 1.05, z0 + 1.05)
+
+
+def add_corner_post_face_stud_y(mesh, x0, y0, z0):
+    s = base.STUD_SIZE / 2.0
+    reach = base.STUD_HEIGHT
+    y1 = y0 + reach
+    base.add_box(mesh, x0 - s, x0 + s, y0, y1, z0 - s, z0 + s)
+    rib = 0.45
+    base.add_box(mesh, x0 - 1.05, x0 + 1.05, y0 + reach * 0.45, y1 - 0.25, z0 - s - rib, z0 + s + rib)
+
+
 def make_stackable_corner_post(height, socket_positions):
     mesh = base.Mesh()
     half = tile.POST_WIDTH / 2.0
@@ -1271,8 +1289,8 @@ def make_stackable_corner_post(height, socket_positions):
     add_clipped_post_socket_ring(mesh, body, socket_poly, depth)
     tile.add_extruded_polygon(mesh, body, depth - overlap, height)
     for z in socket_positions:
-        tile.add_face_stud_x(mesh, half, 0.0, z)
-        tile.add_face_stud_y(mesh, 0.0, half, z)
+        add_corner_post_face_stud_x(mesh, half, 0.0, z)
+        add_corner_post_face_stud_y(mesh, 0.0, half, z)
     add_top_stack_tab(mesh, height, stack_center)
     return mesh
 
