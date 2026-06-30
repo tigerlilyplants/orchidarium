@@ -40,6 +40,8 @@ LABEL_Y = 5.0
 LABEL_RECESS_DEPTH = 0.75
 POST_STACK_CONNECTOR_OFFSET = 5.5
 POST_STACK_CONNECTOR_CHAMFER = 2.4
+POST_STACK_TAB_RIB = 0.28
+POST_STACK_TAB_BAND = 1.05
 CORNER_FILLER_REACH = low.LOW_BASE
 CORNER_FILLER_EMBED = 0.05
 PREFIX = "box_wall"
@@ -1187,9 +1189,20 @@ def make_stack_sleeve(height=25.0, clearance=0.65, wall=3.0):
 
 
 def add_top_stack_tab(mesh, height, center=(0.0, 0.0)):
+    cx, cy = center
+    s = base.STUD_SIZE / 2.0
     z0 = height
     z1 = height + base.STUD_HEIGHT
     tile.add_extruded_polygon(mesh, stack_connector_polygon(center, base.STUD_SIZE), z0, z1)
+    base.add_box(
+        mesh,
+        cx - s - POST_STACK_TAB_RIB,
+        cx + s + POST_STACK_TAB_RIB,
+        cy - POST_STACK_TAB_BAND,
+        cy + POST_STACK_TAB_BAND,
+        z0 + base.STUD_HEIGHT * 0.55,
+        z1 - 0.30,
+    )
 
 
 def stack_connector_polygon(center, size):

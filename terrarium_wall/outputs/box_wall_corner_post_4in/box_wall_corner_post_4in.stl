@@ -1231,4 +1231,88 @@ solid box_wall_corner_post_4in
       vertex 0.725000 10.275000 104.900000
     endloop
   endfacet
+  facet normal 0.000000 0.000000 1.000000
+    outer loop
+      vertex 0.445000 4.450000 104.600000
+      vertex 10.555000 4.450000 104.600000
+      vertex 10.555000 6.550000 104.600000
+    endloop
+  endfacet
+  facet normal 0.000000 0.000000 1.000000
+    outer loop
+      vertex 0.445000 4.450000 104.600000
+      vertex 10.555000 6.550000 104.600000
+      vertex 0.445000 6.550000 104.600000
+    endloop
+  endfacet
+  facet normal 0.000000 0.000000 -1.000000
+    outer loop
+      vertex 0.445000 4.450000 103.415000
+      vertex 0.445000 6.550000 103.415000
+      vertex 10.555000 6.550000 103.415000
+    endloop
+  endfacet
+  facet normal 0.000000 0.000000 -1.000000
+    outer loop
+      vertex 0.445000 4.450000 103.415000
+      vertex 10.555000 6.550000 103.415000
+      vertex 10.555000 4.450000 103.415000
+    endloop
+  endfacet
+  facet normal 0.000000 -1.000000 0.000000
+    outer loop
+      vertex 0.445000 4.450000 103.415000
+      vertex 10.555000 4.450000 103.415000
+      vertex 10.555000 4.450000 104.600000
+    endloop
+  endfacet
+  facet normal 0.000000 -1.000000 0.000000
+    outer loop
+      vertex 0.445000 4.450000 103.415000
+      vertex 10.555000 4.450000 104.600000
+      vertex 0.445000 4.450000 104.600000
+    endloop
+  endfacet
+  facet normal 1.000000 0.000000 0.000000
+    outer loop
+      vertex 10.555000 4.450000 103.415000
+      vertex 10.555000 6.550000 103.415000
+      vertex 10.555000 6.550000 104.600000
+    endloop
+  endfacet
+  facet normal 1.000000 0.000000 0.000000
+    outer loop
+      vertex 10.555000 4.450000 103.415000
+      vertex 10.555000 6.550000 104.600000
+      vertex 10.555000 4.450000 104.600000
+    endloop
+  endfacet
+  facet normal 0.000000 1.000000 0.000000
+    outer loop
+      vertex 10.555000 6.550000 103.415000
+      vertex 0.445000 6.550000 103.415000
+      vertex 0.445000 6.550000 104.600000
+    endloop
+  endfacet
+  facet normal 0.000000 1.000000 -0.000000
+    outer loop
+      vertex 10.555000 6.550000 103.415000
+      vertex 0.445000 6.550000 104.600000
+      vertex 10.555000 6.550000 104.600000
+    endloop
+  endfacet
+  facet normal -1.000000 0.000000 0.000000
+    outer loop
+      vertex 0.445000 6.550000 103.415000
+      vertex 0.445000 4.450000 103.415000
+      vertex 0.445000 4.450000 104.600000
+    endloop
+  endfacet
+  facet normal -1.000000 0.000000 0.000000
+    outer loop
+      vertex 0.445000 6.550000 103.415000
+      vertex 0.445000 4.450000 104.600000
+      vertex 0.445000 6.550000 104.600000
+    endloop
+  endfacet
 endsolid box_wall_corner_post_4in
