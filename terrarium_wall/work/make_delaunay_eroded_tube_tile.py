@@ -28,8 +28,9 @@ TUBE_BASE_EMBED = 0.75
 HORN_FOOT_LOCK = 0.10
 INNER_OPEN_START = 0.12
 INNER_OPEN_END = 0.36
-POST_WIDTH = 18.0
-POST_INSIDE_CHAMFER = 8.0
+POST_WIDTH = base.SOCKET_INSET * 2.0
+POST_INSIDE_CHAMFER = base.SOCKET_INSET
+POST_STUD_EXTRA_REACH = 1.20
 BASE_MARGIN = 0.35
 BASE_SMOOTHING = 4
 TOP_SMOOTHING = 2
@@ -804,21 +805,27 @@ def add_extruded_polygon(mesh, points, zmin, zmax):
 
 def add_face_stud_x(mesh, x0, y0, z0):
     s = base.STUD_SIZE / 2.0
-    x1 = x0 + base.STUD_HEIGHT
+    reach = max(base.STUD_HEIGHT, base.SOCKET_DEPTH + POST_STUD_EXTRA_REACH)
+    x1 = x0 + reach
     base.add_box(mesh, x0, x1, y0 - s, y0 + s, z0 - s, z0 + s)
     rib = 0.45
-    base.add_box(mesh, x0 + base.STUD_HEIGHT * 0.45, x1 - 0.25, y0 - s - rib, y0 + s + rib, z0 - 1.05, z0 + 1.05)
+    base.add_box(mesh, x0 + reach * 0.45, x1 - 0.25, y0 - s - rib, y0 + s + rib, z0 - 1.05, z0 + 1.05)
 
 
 def add_face_stud_y(mesh, x0, y0, z0):
     s = base.STUD_SIZE / 2.0
-    y1 = y0 + base.STUD_HEIGHT
+    reach = max(base.STUD_HEIGHT, base.SOCKET_DEPTH + POST_STUD_EXTRA_REACH)
+    y1 = y0 + reach
     base.add_box(mesh, x0 - s, x0 + s, y0, y1, z0 - s, z0 + s)
     rib = 0.45
-    base.add_box(mesh, x0 - 1.05, x0 + 1.05, y0 + base.STUD_HEIGHT * 0.45, y1 - 0.25, z0 - s - rib, z0 + s + rib)
+    base.add_box(mesh, x0 - 1.05, x0 + 1.05, y0 + reach * 0.45, y1 - 0.25, z0 - s - rib, z0 + s + rib)
 
 
-def make_box_corner_post():
+def make_box_corner_post(height=None, socket_positions=None):
+    if height is None:
+        height = TILE
+    if socket_positions is None:
+        socket_positions = base.SOCKET_POS
     mesh = base.Mesh()
     half = POST_WIDTH / 2.0
     chamfer = min(POST_INSIDE_CHAMFER, POST_WIDTH - 2.0)
@@ -829,8 +836,8 @@ def make_box_corner_post():
         (-half, half),
         (-half, -half + chamfer),
     ]
-    add_extruded_polygon(mesh, body, 0.0, TILE)
-    for z in base.SOCKET_POS:
+    add_extruded_polygon(mesh, body, 0.0, height)
+    for z in socket_positions:
         add_face_stud_x(mesh, half, 0.0, z)
         add_face_stud_y(mesh, 0.0, half, z)
     return mesh
