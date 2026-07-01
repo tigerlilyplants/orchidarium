@@ -10,12 +10,14 @@ import sys
 import traceback
 
 from typing import TYPE_CHECKING
+from setproctitle import setproctitle
 from time import sleep
 from functools import partial
 from threading import Thread
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from orchidarium.publishers.influxdb import InfluxDBPublisher
 from orchidarium.api import app
+from orchidarium.api.health import mark_thread_pool_failed, mark_thread_pool_healthy, mark_thread_pool_started
 from orchidarium.support import sensor_count, sensor_generator
 from orchidarium import env
 
@@ -44,21 +46,21 @@ def daemon() -> int:
     """
     _ret_code = 0
 
+    setproctitle('orchidarium')
+
     # Start the healthcheck and other APIs in a separate thread off our main process as a daemon thread.
     _main_process_daemon_threads: List[Thread] = [
-        # This needs to be rewritten ~
-        # https://oneuptime.com/blog/post/2025-01-06-python-health-checks-kubernetes/view
-        # Thread(
-        #     target=partial(
-        #         app.run,
-        #         port=int(env['HEALTHCHECK_PORT']),
-        #         debug=bool(env['DEBUG']),
-        #         use_reloader=False
-        #     ),
-        #     # Do not block upon start().
-        #     daemon=True,
-        #     name='healthcheck'
-        # ),
+        Thread(
+            target=partial(
+                app.run,
+                port=int(env['HEALTHCHECK_PORT']),
+                debug=bool(env['DEBUG']),
+                use_reloader=False
+            ),
+            # Do not block upon start().
+            daemon=True,
+            name='healthcheck'
+        ),
     ]
 
     for _dthread in _main_process_daemon_threads:
@@ -67,9 +69,12 @@ def daemon() -> int:
 
     try:
         while True:
+            _worker_count = sensor_count()
+            mark_thread_pool_started(expected_workers=_worker_count)
+
             # Start as many threads as there are sensors.
-            with ThreadPoolExecutor(max_workers=sensor_count(), thread_name_prefix='sensor') as pool, InfluxDBPublisher() as publisher:
-                log.debug(f'Started {sensor_count()} threads and opened a connection to a publisher')
+            with ThreadPoolExecutor(max_workers=_worker_count, thread_name_prefix='sensor') as pool, InfluxDBPublisher() as publisher:
+                log.debug(f'Started {_worker_count} threads and opened a connection to a publisher')
 
                 # Build a list of thread futures.
                 threads: List[Future] = []
@@ -87,8 +92,14 @@ def daemon() -> int:
                 for thread in as_completed(threads):
                     try:
                         thread.result()
-                    except Exception:
-                        log.error(f'Thread {thread} failed. Full traceback: {traceback.format_exc()}')
+                    except Exception as e:
+                        _traceback = traceback.format_exc()
+                        log.error(f'Thread {thread} failed. Full traceback: {_traceback}')
+                        mark_thread_pool_failed(
+                            completed_workers=sum(_thread.done() for _thread in threads),
+                            failed_workers=1,
+                            error=e
+                        )
 
                         for _thread in threads:
                             if _thread is not thread:
@@ -99,11 +110,13 @@ def daemon() -> int:
                         _ret_code = 1
                         break
                 else:
+                    mark_thread_pool_healthy(completed_workers=len(threads))
                     _ret_code = 0
 
             sleep(int(env['INTERVAL']))
     except Exception as e:
         _ret_code = 1
+        mark_thread_pool_failed(error=e)
         log.error(e)
 
     for _dthread in _main_process_daemon_threads:

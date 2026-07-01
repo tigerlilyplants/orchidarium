@@ -1,13 +1,9 @@
 from __future__ import annotations
 
 import logging
-import os
 
-from pathlib import Path
 from abc import abstractmethod, ABC
 from typing import TYPE_CHECKING
-from orchidarium.lib.json import write_json
-from orchidarium import env
 
 if TYPE_CHECKING:
     from orchidarium.publishers._base import Publisher
@@ -24,7 +20,6 @@ class Sensor(ABC):
         self._col: bool = False
         self._pub: bool = False
         self._temperature = default_temperature
-        self.cache()
         log.info(f'Instantiating thread for sensor "{self.__class__.__name__.lower().removesuffix("sensor")}"')
 
     @property
@@ -35,13 +30,11 @@ class Sensor(ABC):
     def _collection(self, value: bool) -> None:
         """
         Track whether or not a sensor has successfully collected its data.
-        This property adds the side-effect of updating the cache on-disk.
 
         Args:
             value (bool): value to set the collection indicator to (True or False).
         """
         self._col = value
-        self.cache()
 
     @property
     def _publication(self) -> bool:
@@ -51,13 +44,11 @@ class Sensor(ABC):
     def _publication(self, value: bool) -> None:
         """
         Track whether or not a sensor has successfully collected its data.
-        This property adds the side-effect of updating the cache on-disk.
 
         Args:
             value (bool): value to set the collection indicator to (True or False).
         """
         self._pub = value
-        self.cache()
 
     @property
     def temperature(self) -> float:
@@ -68,12 +59,6 @@ class Sensor(ABC):
 
     @temperature.setter
     def temperature(self, value: float) -> None:
-        """
-        Set the temperature (in Celsius).
-
-        Args:
-            value (float): temperature in Celsius.
-        """
         self._temperature = value
 
     @abstractmethod
@@ -109,25 +94,8 @@ class Sensor(ABC):
         """
         Make Sensors callable, wherein data collection and publication is carried out.
         """
-        self.collect()
-        self.publish(publisher)
+        if not self.collect():
+            raise RuntimeError(f'Failed to collect data for sensor "{self.__class__.__name__}"')
 
-    def cache(self, file: Path = Path('healthcheck.json')) -> bool:
-        """
-        Write a cache to disk that healthchecks can pick up on to indicate the proper health.
-
-        Args:
-            file (Path): File to cache healthcheck results in. (default: Path('healthcheck.json'))
-
-        Returns:
-            bool: True if caching the result was successful; False otherwise.
-        """
-        return write_json(
-            data={
-                "healthcheck": {
-                    "publish": self._publication,
-                    "readout": self._collection
-                }
-            },
-            path=Path(os.path.join(env['HEALTHCHECK_CACHE_PATH'], self.__class__.__name__.lower() + '_' + str(file)))
-        )
+        if not self.publish(publisher):
+            raise RuntimeError(f'Failed to publish data for sensor "{self.__class__.__name__}"')

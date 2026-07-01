@@ -67,29 +67,7 @@ class InfluxDBPublisher(Publisher):
     def __exit__(self, *args: Any) -> Any:
         self._client.close()
 
-    def submit_humidity(self, datum: Any) -> bool:
-        """
-
-        Args:
-            datum (Any): _description_
-
-        Returns:
-            bool: _description_
-        """
-        return True
-
-    def submit_temperature(self, datum: Any) -> bool:
-        """
-
-        Args:
-            datum (Any): _description_
-
-        Returns:
-            bool: _description_
-        """
-        return True
-
-    def submit_soil(self, datum: Any) -> bool:
+    def submit(self, datum: Any) -> bool:
         """
 
 

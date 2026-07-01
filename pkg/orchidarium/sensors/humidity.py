@@ -18,16 +18,10 @@ log = logging.getLogger(__name__)
 
 class HumiditySensor(Sensor):
 
-    _TEMPERATURE_CELSIUS: float = 0.0
+    _TEMPERATURE_FAHRENHEIT: float = 0.0
     _HUMIDITY: float = 0.0
 
     def collect(self) -> bool:
-        """
-        Collect data from the USB humidity sensor.
-
-        Returns:
-            bool: whether or not the data collection was successful.
-        """
         device = find(
             idVendor=int(
                 '0x0487',
@@ -63,14 +57,10 @@ class HumiditySensor(Sensor):
                     _search_humidity = re.search(_extract_humidity, _res)
 
                     if _search_temperature and _search_humidity:
-                        self._TEMPERATURE_CELSIUS = float(_search_temperature.group(0))
-
-                        # Update self._temperature so the interface's property works.
-                        self.temperature = self._TEMPERATURE_CELSIUS
-
+                        self._TEMPERATURE_FAHRENHEIT = float(_search_temperature.group(0))
                         self._HUMIDITY = float(_search_humidity.group(0))
 
-                        log.debug(f'Collected temperature (F): {self._TEMPERATURE_CELSIUS}. Collected (relative) humidity value: {self._HUMIDITY}')
+                        log.debug(f'Collected temperature (F): {self._TEMPERATURE_FAHRENHEIT}. Collected (relative) humidity value: {self._HUMIDITY}')
 
                         self._collection = True
                         return True

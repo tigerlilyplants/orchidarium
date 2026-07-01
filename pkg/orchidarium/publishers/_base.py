@@ -18,6 +18,6 @@ class Publisher(ABC):
     def connect(self) -> bool:
         raise NotImplementedError
 
-    # @abstractmethod
-    # def submit(self, datum: Any) -> bool:
-    #     raise NotImplementedError
+    @abstractmethod
+    def submit(self, datum: Any) -> bool:
+        raise NotImplementedError

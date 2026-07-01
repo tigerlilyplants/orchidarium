@@ -1,0 +1,1 @@
+video=DSI-1:720x1280@60,rotate=0

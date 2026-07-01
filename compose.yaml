@@ -10,10 +10,25 @@ services:
         condition: service_healthy
     volumes:
       # Certs
-      - ./certs/cert.pem:/etc/grafana/cert.pem:ro
-      - ./certs/key.pem:/etc/grafana/key.pem:ro
+      - type: bind
+        source: ./certs/cert.pem
+        target: /etc/grafana/cert.pem
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./certs/key.pem
+        target: /etc/grafana/key.pem
+        read_only: true
+        bind:
+          create_host_path: false
       # Config
-      - ./grafana/config.ini:/etc/grafana/grafana.ini:ro
+      - type: bind
+        source: ./grafana/config.ini
+        target: /etc/grafana/grafana.ini
+        read_only: true
+        bind:
+          create_host_path: false
     environment:
       - TERM=linux
       - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-polystat-panel
@@ -106,7 +121,7 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-      target: develop
+      target: production
       pull: true
     container_name: orchidarium
     depends_on:
@@ -114,24 +129,19 @@ services:
         condition: service_started
       influxdb:
         condition: service_healthy
-    # Provide access to the USB sensors and mount a small healthcheck cache.
+    # Provide access to the USB sensors.
     volumes:
       # udev on /dev/humidity type devtmpfs (ro,nosuid,relatime,size=32847200k,nr_inodes=8211800,mode=755,inode64)
       # udev on /dev/soil type devtmpfs (ro,nosuid,relatime,size=32847200k,nr_inodes=8211800,mode=755,inode64)
-      # tmpfs on /opt/orchidarium/healthcheck type tmpfs (rw,relatime,size=10240k,uid=10001,inode64)
       # udev on /dev/bus/usb type devtmpfs (ro,nosuid,relatime,size=32847200k,nr_inodes=8211800,mode=755,inode64)
+      - /dev/gpiomem:/dev/gpiomem:ro
       - /dev/bus/usb:/dev/bus/usb:ro
-      - /dev/humidity:/dev/humidity:ro
-      - /dev/soil:/dev/soil:ro
-      - cache:/opt/orchidarium/healthcheck
     environment:
       - INFLUXDB_HOST=influxdb:8086
       - INFLUXDB_TOKEN=$$INFLUXDB_TOKEN
       - INFLUXDB_ORG=orchidarium
       - INFLUXDB_DATABASE=orchidarium
       - HEALTHCHECK_PORT=8085
-      # - HEALTHCHECK_CACHE_TTL=60
-      - HEALTHCHECK_CACHE_PATH=/opt/orchidarium/healthcheck
       - DEBUG=true
     ports:
       # Healthcheck is served on port 8085 on localhost.
@@ -153,7 +163,7 @@ services:
         reservations:
           cpus: '1.0'
           memory: 1G
-    platform: linux/amd64
+    platform: linux/arm64
     privileged: true
     read_only: true
 volumes:
@@ -167,11 +177,5 @@ volumes:
     driver: local
     driver_opts:
       o: "size=10g,uid=0"
-      device: tmpfs
-      type: tmpfs
-  cache:
-    driver: local
-    driver_opts:
-      o: "size=10m,uid=10001"
       device: tmpfs
       type: tmpfs

@@ -1,5 +1,15 @@
 fail_fast: true
 repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: check-added-large-files
+        args: [--maxkb=11000, --enforce-all]
+    -   id: check-executables-have-shebangs
+    -   id: check-shebang-scripts-are-executable
+    -   id: mixed-line-ending
+
 -   repo: https://gitlab.com/vojko.pribudic.foss/pre-commit-update
     rev: v0.9.0
     hooks:
@@ -15,24 +25,14 @@ repos:
         -   .config/.hadolint.yaml
         -   Dockerfile
 
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
-    hooks:
-    -   id: trailing-whitespace
-    -   id: check-added-large-files
-        args: [--maxkb=15000, --enforce-all]
-    -   id: check-executables-have-shebangs
-    -   id: check-shebang-scripts-are-executable
-    -   id: mixed-line-ending
-
--   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.1.0
-    hooks:
-    -   id: mypy
-        args:
-        -   --install-types
-        -   --non-interactive
-        -   --config-file=pyproject.toml
+# -   repo: https://github.com/pre-commit/mirrors-mypy
+#     rev: v1.19.1
+#     hooks:
+#     -   id: mypy
+#         args:
+#         -   --install-types
+#         -   --non-interactive
+#         -   --config-file=pyproject.toml
 
 -   repo: https://github.com/jumanjihouse/pre-commit-hooks
     rev: 3.0.0
@@ -47,10 +47,10 @@ repos:
   #     - id: circleci-config-validate
 
 -   repo: https://github.com/python-poetry/poetry
-    rev: 2.4.1
+    rev: 2.3.4
     hooks:
-    -   id: poetry-check
     -   id: poetry-lock
+    -   id: poetry-check
 
 # -   repo: https://github.com/PyCQA/pylint
 #     rev: v3.3.8
@@ -71,7 +71,7 @@ repos:
     -   id: msg-issue-prefix
 
 -   repo: https://github.com/jsh9/pydoclint
-    rev: 0.8.6
+    rev: 0.8.3
     hooks:
     -   id: pydoclint
         args:
