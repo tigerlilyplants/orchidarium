@@ -4,7 +4,6 @@ import re
 import logging
 
 from usb.core import find
-from orchidarium import env
 from orchidarium.data.queue import MetricDatum
 from orchidarium.sensors import Sensor
 from orchidarium.lib.bus import InterfaceClaim, read
@@ -19,24 +18,20 @@ log = logging.getLogger(__name__)
 
 class HumiditySensor(Sensor):
 
+    USB_VENDOR_ID: int = 0x0487
+    USB_PRODUCT_ID: int = 0x0007
     _TEMPERATURE_FAHRENHEIT: float = 0.0
     _HUMIDITY: float = 0.0
 
     def collect(self) -> bool:
         device = find(
-            idVendor=int(
-                '0x0487',
-                base=16
-            ),
-            idProduct=int(
-                '0x0007',
-                base=16
-            )
+            idVendor=self.USB_VENDOR_ID,
+            idProduct=self.USB_PRODUCT_ID
         )
 
         if device is None:
             # Exit early if the USB device is not available.
-            log.error(f'USB device with idVendor "{env["USB_VENDOR_ID"]}" and idProduct "{env["USB_PRODUCT_ID"]}" not found, exiting.')
+            log.error(f'USB device with idVendor "{self.USB_VENDOR_ID:#06x}" and idProduct "{self.USB_PRODUCT_ID:#06x}" not found, exiting.')
 
             self._collection = False
 
