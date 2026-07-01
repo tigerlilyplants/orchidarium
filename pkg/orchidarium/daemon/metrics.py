@@ -1,12 +1,11 @@
 """
-Run the Orchidarium monitoring daemon.
+Run the Orchidarium metrics process.
 """
 
 
 from __future__ import annotations
 
 import logging
-import sys
 import traceback
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -20,6 +19,7 @@ from orchidarium import env
 from orchidarium.api import app
 from orchidarium.api.health import mark_thread_pool_failed, mark_thread_pool_healthy, mark_thread_pool_started
 from orchidarium.data import metric_queue
+from orchidarium.logging import configure_logging
 from orchidarium.publishers.influxdb import InfluxDBPublisher
 from orchidarium.sensors import sensor_count, sensor_generator
 
@@ -29,26 +29,22 @@ if TYPE_CHECKING:
 
 
 log = logging.getLogger(__name__)
-logging.basicConfig(
-    stream=sys.stdout,
-    level=logging.DEBUG if env['DEBUG'] != '' else logging.INFO,
-    format='%(asctime)s | %(levelname)s | %(name)s | %(message)s'
-)
 
 
-def daemon() -> int:
+def run_metrics_process() -> int:
     """
-    Daemon loop.
+    Run the metrics collection and publication process.
 
     Returns:
         int: 0 if successful, 1 or another exit code, otherwise.
     """
+    configure_logging()
     _ret_code = 0
 
-    setproctitle('orchidarium')
+    setproctitle('orchidarium-metrics')
 
-    # Start the healthcheck and other APIs in a separate thread off our main process as a daemon thread.
-    _main_process_daemon_threads: List[Thread] = [
+    # Start the healthcheck and other APIs in a daemon thread inside the metrics process.
+    _metrics_process_daemon_threads: List[Thread] = [
         Thread(
             target=partial(
                 app.run,
@@ -58,11 +54,11 @@ def daemon() -> int:
             ),
             # Do not block upon start().
             daemon=True,
-            name='healthcheck'
+            name='metrics-api'
         ),
     ]
 
-    for _dthread in _main_process_daemon_threads:
+    for _dthread in _metrics_process_daemon_threads:
         _dthread.start()
         log.debug(f'Started thread "{_dthread.name}": {_dthread.is_alive()}')
 
@@ -120,7 +116,7 @@ def daemon() -> int:
         mark_thread_pool_failed(error=e)
         log.error(e)
 
-    for _dthread in _main_process_daemon_threads:
+    for _dthread in _metrics_process_daemon_threads:
         _dthread.join(timeout=5)
 
     return _ret_code
