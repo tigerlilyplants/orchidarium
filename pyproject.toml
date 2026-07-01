@@ -6,12 +6,6 @@ authors = [{ name = "Emma Doyle", email ="emma.ann.doyle@gmail.com" }]
 maintainers = [{ name = "Emma Doyle", email = "emma.ann.doyle@gmail.com" }]
 license = "GPL-3.0-or-later"
 readme = "README.md"
-packages = [
-  { include = "orchidarium", from = "pkg" },
-]
-include = [
-  "LICENSE"
-]
 keywords = [
     "python",
     "orchids",
@@ -54,13 +48,17 @@ dependencies = [
     "gpiozero (>=2.0)",
     "rpi.gpio (>=0.7.1)",
     "PySide6 (>=6.10)",
+    "attrs (>=25.3.0)",
+    "cattrs (>=25.3.0)",
     "cachetools (>=7.0.5)"
 ]
 
 [tool.poetry]
-# Specify additional READMEs here.
-readme = [
-    "README.md"
+packages = [
+  { include = "orchidarium", from = "pkg" },
+]
+include = [
+  "LICENSE"
 ]
 
 [tool.poetry.requires-plugins]

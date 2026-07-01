@@ -1,10 +1,27 @@
 #! /usr/bin/env bash
 # Set up a RPi from OS installation to up-and-running with Orchidarium.
 
-curl -fsSL https://pyenv.run | bash
+# curl -fsSL https://pyenv.run | sudo bash
+
+# Install Docker.
+sudo install -m 0755 -d /etc/apt/keyrings
+
+sudo curl -fsSL https://download.docker.com/linux/debian/gpg \
+  -o /etc/apt/keyrings/docker.asc
+
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+. /etc/os-release
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $VERSION_CODENAME stable" \
+  | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt update
+
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 # Python deps + i2c-tools
-sudo apt-get install build-essential gdb lcov pkg-config \
+sudo apt-get install -y build-essential gdb lcov pkg-config \
     libbz2-dev libffi-dev libgdbm-dev libgdbm-compat-dev liblzma-dev \
     libncurses5-dev libreadline6-dev libsqlite3-dev libssl-dev \
     lzma-dev tk-dev uuid-dev zlib1g-dev libmpdec-dev libzstd-dev \
