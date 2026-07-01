@@ -23,7 +23,7 @@ This project integrates off-the-shelf sensors with electrical, HVAC, lighting, a
 
 ## Motivation
 
-As I've progressed through my hobbies, from plants -> building terrariums -> freshwater fish -> saltwater fish, I've noticed a trend of the following issues that the individual consumer markets address with different, oftentimes awkwardly composable, products (I surmise similar problems exist in other fields as well).
+As I've progressed through my hobbies, from plants -> building terrariums -> freshwater fish -> saltwater corals / reef tanks, I've noticed a trend of the following issues that the individual consumer markets address with different, oftentimes awkwardly composable, products (I surmise similar problems exist in other fields as well).
 
 1. Maintaining and monitoring adequate environmental conditions in confined spaces, whether liquid- or gas / atmosphere-based, is hard, and often requires different controllers and sensors to achieve long-term stability.
 2. Dosing solids and liquids at the right times and in the right quantities could mean life or death for the occupants of the confined space, and the same constraints apply to the environment / climate.
