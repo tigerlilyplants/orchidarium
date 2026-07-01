@@ -58,7 +58,8 @@ packages = [
   { include = "orchidarium", from = "pkg" },
 ]
 include = [
-  "LICENSE"
+  "LICENSE",
+  { path = "pkg/orchidarium/ui/qml/**/*", format = ["sdist", "wheel"] },
 ]
 
 [tool.poetry.requires-plugins]
@@ -78,7 +79,7 @@ build-backend = "poetry.core.masonry.api"
 orchidarium = "orchidarium.entrypoint:cli"
 
 [project.gui-scripts]
-gui = "ui.entrypoint:run"
+gui = "orchidarium.ui.entrypoint:run"
 
 [tool.mypy]
 python_version = "3.13"

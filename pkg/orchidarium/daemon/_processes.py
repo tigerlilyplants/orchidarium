@@ -61,6 +61,18 @@ def hardware_process_target() -> int:
     return _run_hardware_process()
 
 
+def ui_process_target() -> int:
+    """
+    Run the UI process target.
+
+    Returns:
+        int: process exit code.
+    """
+    from orchidarium.daemon.ui import run_ui_process as _run_ui_process
+
+    return _run_ui_process()
+
+
 PROCESS_SPECS = (
     ProcessSpec(
         name='metrics',
@@ -73,6 +85,10 @@ PROCESS_SPECS = (
     ProcessSpec(
         name='hardware',
         target=hardware_process_target
+    ),
+    ProcessSpec(
+        name='ui',
+        target=ui_process_target
     ),
 )
 

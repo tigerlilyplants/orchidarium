@@ -43,7 +43,7 @@ I also want it to be small.
 
 ### Runtime Hierarchy
 
-Orchidarium has one supervisor process and separate child processes for each long-running runtime domain. Metrics, API, and hardware run today; the UI process is planned but not started yet.
+Orchidarium has one supervisor process and separate child processes for each long-running runtime domain. Metrics, API, hardware, and UI run today.
 
 ```text
 tini
@@ -63,8 +63,8 @@ tini
     │       └── /sensors/active
     ├── hardware / orchidarium-hardware
     │   └── hardware main thread
-    └── ui
-        └── planned, not registered yet
+    └── ui / orchidarium-ui
+        └── Qt/QML main thread
 ```
 
 - `orchidarium command`: CLI entrypoint in `orchidarium.entrypoint`; calls `orchidarium.daemon.run()`.
@@ -72,7 +72,7 @@ tini
 - `metrics`: child process spec; process title is `orchidarium-metrics`; owns metrics queue pub/sub, sensor collection, and InfluxDB publication.
 - `api`: child process spec; process title is `orchidarium-api`; serves Flask API endpoints using runtime snapshots published by the metrics process.
 - `hardware`: child process spec; process title is `orchidarium-hardware`; currently an idle scaffold for relay and device control. It publishes a heartbeat used by `/health` and `/ready`.
-- `ui`: planned future child process; not registered in `PROCESS_SPECS` yet.
+- `ui`: child process spec; process title is `orchidarium-ui`; runs the Qt/QML control surface from `orchidarium.ui`.
 - `sensor_*`: worker threads created by the metrics process during each collection interval, with one submitted task per discovered sensor.
 
 The publisher is not a separate thread yet. It runs after sensor collection completes in the metrics process main thread, pulling data from `metric_queue` and writing it to InfluxDB.
