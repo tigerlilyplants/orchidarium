@@ -16,8 +16,8 @@ set -eo pipefail
 # fi
 
 # Start the service.
-if [ -n "$(poetry env info -p)" ]; then
-    poetry run orchidarium "$@"
+if command -v poetry >/dev/null 2>&1 && poetry env info -p >/dev/null 2>&1; then
+    exec poetry run orchidarium "$@"
 else
-    orchidarium "$@"
+    exec orchidarium "$@"
 fi

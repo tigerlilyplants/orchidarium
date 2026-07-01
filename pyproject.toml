@@ -5,7 +5,13 @@ description = "a monitoring and control agent designed for terrariums that requi
 authors = [{ name = "Emma Doyle", email ="emma.ann.doyle@gmail.com" }]
 maintainers = [{ name = "Emma Doyle", email = "emma.ann.doyle@gmail.com" }]
 license = "GPL-3.0-or-later"
-dynamic = [ "readme" ]
+readme = "README.md"
+packages = [
+  { include = "orchidarium", from = "pkg" },
+]
+include = [
+  "LICENSE"
+]
 keywords = [
     "python",
     "orchids",

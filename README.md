@@ -1,6 +1,6 @@
 # Orchidarium 🪴
 
-![GitHub Release](https://img.shields.io/github/v/release/tigerlilyobservatory/orchidarium)
+![GitHub Release](https://img.shields.io/github/v/release/tigerlilyplants/orchidarium)
 
 <p align="left" width="100%">
   <img width="20%" src="./img/orchid.png" alt="orchid">
