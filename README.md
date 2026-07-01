@@ -28,10 +28,9 @@ It is designed around custom control loops that combine data from off-the-shelf 
 As I've progressed through my hobbies, from plants -> building terrariums -> freshwater fish -> saltwater fish, I've noticed a trend of the following issues that the individual consumer markets address with different, oftentimes awkwardly composable, products (I surmise similar problems exist in other fields as well).
 
 1. Maintaining and monitoring adequate environmental conditions in confined spaces, whether liquid- or gas / atmosphere-based, is hard, and often requires different controllers and sensors to achieve long-term stability.
-2. Dosing solids and liquids at the right times and in the right quantities could mean life or death for the occupants of the confined space.
-3. Changing values too quickly can mean life or death of the occupants.
-4. Complex timing and scheduling of jobs is often impossible or a lot of work to configure and ends up getting done manually on a schedule.
-5. Reliable feedback about how the action that took place corrected a problem is nonexistent or difficult to retrieve / obtain.
+2. Dosing solids and liquids at the right times and in the right quantities could mean life or death for the occupants of the confined space, and the same constraints apply to the environment / climate.
+3. Complex timing and scheduling of jobs is often impossible or a lot of work to configure and ends up getting done manually on a schedule.
+4. Reliable feedback about how the action that took place corrected a problem is nonexistent or difficult to retrieve / obtain.
 
 The products I've yet tried have not accomplished the basic control flow and user experience that I want on every tank and shelf:
 
