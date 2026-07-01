@@ -10,7 +10,7 @@ from orchidarium.lib.bus import InterfaceClaim, read
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from orchidarium.data.queue import DataQueue
+    from orchidarium.data.queue import MetricQueueSink
 
 
 log = logging.getLogger(__name__)
@@ -68,7 +68,7 @@ class HumiditySensor(Sensor):
         self._collection = False
         return False
 
-    def publish(self, data_queue: DataQueue) -> bool:
+    def publish(self, data_queue: MetricQueueSink) -> bool:
         data_queue.append(
             MetricDatum(
                 measurement='environment',

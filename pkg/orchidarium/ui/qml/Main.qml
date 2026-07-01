@@ -157,15 +157,25 @@ Window {
                         }
 
                         Slider {
+                            id: relaySlider
+
+                            property string currentRelayState: relayStates[index]
+
                             width: parent.width
                             from: 0
                             to: 2
                             stepSize: 1
                             snapMode: Slider.SnapAlways
-                            value: sliderValueForState(relayStates[index])
+
+                            Component.onCompleted: value = sliderValueForState(currentRelayState)
+
+                            onCurrentRelayStateChanged: {
+                                let nextValue = sliderValueForState(currentRelayState)
+                                if (value !== nextValue)
+                                    value = nextValue
+                            }
 
                             onMoved: setRelayState(index, stateForSliderValue(value))
-                            onValueChanged: setRelayState(index, stateForSliderValue(value))
                         }
 
                         Row {

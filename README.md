@@ -51,11 +51,12 @@ tini
 └── orchidarium
     ├── metrics / orchidarium-metrics
     │   ├── metrics main thread
-    │   │   ├── metrics queue pub/sub
+    │   │   ├── metrics queue fanout
     │   │   ├── sensor collection interval loop
     │   │   ├── sensor ThreadPoolExecutor
     │   │   │   └── sensor_* worker thread(s)
-    │   │   └── InfluxDB publisher
+    │   │   └── publisher ThreadPoolExecutor
+    │   │       └── publisher_* worker thread(s)
     ├── api / orchidarium-api
     │   └── Flask main thread
     │       ├── /health
@@ -70,15 +71,16 @@ tini
 
 - `orchidarium command`: CLI entrypoint in `orchidarium.entrypoint`; calls `orchidarium.daemon.run()`.
 - `orchidarium`: supervisor process title; starts child processes with `ProcessPoolExecutor` from `orchidarium.daemon._processes`.
-- `metrics`: child process spec; process title is `orchidarium-metrics`; owns metrics queue pub/sub, sensor collection, and InfluxDB publication.
+- `metrics`: child process spec; process title is `orchidarium-metrics`; owns metrics queue fanout, sensor collection, and database publication.
 - `api`: child process spec; process title is `orchidarium-api`; serves Flask API endpoints using runtime snapshots published by the metrics process.
 - `hardware`: child process spec; process title is `orchidarium-hardware`; currently an idle scaffold for relay and device control. It publishes a heartbeat used by `/health` and `/ready`.
 - `ui`: child process spec; process title is `orchidarium-ui`; runs the Qt/QML control surface from `orchidarium.ui`.
 - `sensor_*`: worker threads created by the metrics process during each collection interval, with one submitted task per discovered sensor.
+- `publisher_*`: worker threads created only for publisher queues with backlog, with one queue per database backend.
 
-The publisher is not a separate thread yet. It runs after sensor collection completes in the metrics process main thread, pulling data from `metric_queue` and writing it to InfluxDB.
+Each publisher has its own queue. Sensors publish each collected metric datum into every publisher queue, and each publisher is responsible for draining only its backend-specific queue.
 
-`/ready` fails when the published point backlog reaches `MAX_POINT_BACKLOG`, so schedulers can stop sending new work to a container that is falling behind.
+`/ready` fails when any publisher queue backlog reaches `MAX_POINT_BACKLOG`, so schedulers can stop sending new work to a container that is falling behind.
 
 ## Development
 

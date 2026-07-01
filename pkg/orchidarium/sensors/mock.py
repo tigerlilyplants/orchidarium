@@ -12,7 +12,7 @@ from orchidarium.data.queue import MetricDatum
 from orchidarium.sensors import Sensor
 
 if TYPE_CHECKING:
-    from orchidarium.data.queue import DataQueue
+    from orchidarium.data.queue import MetricQueueSink
 
 
 class MockSensor(Sensor):
@@ -34,7 +34,7 @@ class MockSensor(Sensor):
         self._collection = True
         return True
 
-    def publish(self, data_queue: DataQueue) -> bool:
+    def publish(self, data_queue: MetricQueueSink) -> bool:
         data_queue.append(
             MetricDatum(
                 measurement='environment',

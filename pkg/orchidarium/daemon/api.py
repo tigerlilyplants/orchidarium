@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 
+from flask import cli
 from setproctitle import setproctitle
 
 from orchidarium import env
@@ -29,9 +30,12 @@ def run_api_process() -> int:
     log.info('Started API process')
 
     try:
+        cli.show_server_banner = lambda *args: None
+
         app.run(
             port=int(env['HEALTHCHECK_PORT']),
-            debug=bool(env['DEBUG']),
+            debug=False,
+            use_debugger=False,
             use_reloader=False
         )
     except KeyboardInterrupt:

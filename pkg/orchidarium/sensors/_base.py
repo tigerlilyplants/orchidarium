@@ -6,7 +6,7 @@ from abc import abstractmethod, ABC
 from typing import ClassVar, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from orchidarium.data.queue import DataQueue
+    from orchidarium.data.queue import MetricQueueSink
     from typing import Literal
 
 
@@ -76,12 +76,12 @@ class Sensor(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def publish(self, data_queue: DataQueue) -> bool:
+    def publish(self, data_queue: MetricQueueSink) -> bool:
         """
         Publish collected data to a queue.
 
         Args:
-            data_queue (DataQueue): queue that accepts collected metric data.
+            data_queue (MetricQueueSink): sink that accepts collected metric data.
 
         Raises:
             NotImplementedError: due to this being an abstract method.
@@ -91,7 +91,7 @@ class Sensor(ABC):
         """
         raise NotImplementedError
 
-    def __call__(self, data_queue: DataQueue) -> None:
+    def __call__(self, data_queue: MetricQueueSink) -> None:
         """
         Make Sensors callable, wherein data collection and enqueueing is carried out.
         """

@@ -6,6 +6,7 @@ ABC that defines the API for publishing metrics.
 from __future__ import annotations
 
 from abc import abstractmethod, ABC
+from typing import Any, Self
 
 from orchidarium.data.queue import DataQueue, MetricDatum
 
@@ -19,6 +20,28 @@ class Publisher(ABC):
     @abstractmethod
     def submit(self, datum: MetricDatum) -> bool:
         raise NotImplementedError
+
+    def __enter__(self) -> Self:
+        """
+        Open publisher resources for context-manager usage.
+
+        Returns:
+            Self: publisher instance.
+        """
+        self.connect()
+        return self
+
+    def __exit__(self, *args: Any) -> Any:
+        """
+        Close publisher resources for context-manager usage.
+
+        Args:
+            *args (Any): exception details supplied by the context manager.
+
+        Returns:
+            Any: optional context-manager suppression value.
+        """
+        return None
 
     def publish(self, data_queue: DataQueue) -> int:
         """

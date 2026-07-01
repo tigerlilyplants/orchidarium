@@ -9,7 +9,7 @@ from collections import deque
 from datetime import datetime, timedelta, timezone
 from queue import Empty, Queue
 from threading import Lock
-from typing import Literal, Mapping
+from typing import Literal, Mapping, Protocol
 
 from attrs import define, field
 
@@ -84,6 +84,33 @@ class QueueActivitySummary:
     dequeued: int
     last_enqueued_at: str | None
     last_dequeued_at: str | None
+
+
+@define(frozen=True)
+class QueueRegistryActivitySummary:
+    current_backlog: int
+    total_current_backlog: int
+    publisher_count: int
+    window_seconds: int
+    sample_count: int
+    min_queue_length: int
+    max_queue_length: int
+    average_queue_length: float
+    enqueued: int
+    dequeued: int
+    last_enqueued_at: str | None
+    last_dequeued_at: str | None
+    queues: dict[str, QueueActivitySummary]
+
+
+class MetricQueueSink(Protocol):
+    def append(self, datum: MetricDatum) -> None:
+        """
+        Append a metric datum to one or more queues.
+
+        Args:
+            datum (MetricDatum): metric datum to enqueue.
+        """
 
 
 class DataQueue:
@@ -234,4 +261,122 @@ class DataQueue:
         return sample.timestamp.isoformat()
 
 
-metric_queue = DataQueue()
+class DataQueueRegistry:
+    """
+    Registry of publisher-specific queues.
+    """
+
+    def __init__(self) -> None:
+        self._queues: dict[str, DataQueue] = {}
+        self._lock = Lock()
+
+    def append(self, datum: MetricDatum) -> None:
+        """
+        Append a metric datum to every registered publisher queue.
+
+        Args:
+            datum (MetricDatum): metric datum to enqueue.
+        """
+        for data_queue in self.queues.values():
+            data_queue.append(datum)
+
+    def register(self, name: str, data_queue: DataQueue | None = None) -> DataQueue:
+        """
+        Register and return a publisher queue.
+
+        Args:
+            name (str): publisher queue name.
+            data_queue (DataQueue | None): optional queue instance to register.
+
+        Returns:
+            DataQueue: registered queue.
+        """
+        queue_name = self._coerce_name(name)
+
+        with self._lock:
+            if queue_name not in self._queues:
+                self._queues[queue_name] = data_queue or DataQueue()
+
+            return self._queues[queue_name]
+
+    def queue(self, name: str) -> DataQueue:
+        """
+        Return a registered publisher queue.
+
+        Args:
+            name (str): publisher queue name.
+
+        Returns:
+            DataQueue: registered queue.
+        """
+        return self.register(name)
+
+    @property
+    def queues(self) -> dict[str, DataQueue]:
+        with self._lock:
+            return dict(self._queues)
+
+    def activity_summary(self, window: timedelta | None = None) -> QueueRegistryActivitySummary:
+        """
+        Return a rolling summary across all publisher queues.
+
+        Args:
+            window (timedelta | None): time window to summarize.
+
+        Returns:
+            QueueRegistryActivitySummary: aggregate and per-publisher queue summary.
+        """
+        summaries = {
+            name: data_queue.activity_summary(window=window)
+            for name, data_queue in self.queues.items()
+        }
+
+        if not summaries:
+            history_window = window or timedelta(hours=1)
+            return QueueRegistryActivitySummary(
+                current_backlog=0,
+                total_current_backlog=0,
+                publisher_count=0,
+                window_seconds=int(history_window.total_seconds()),
+                sample_count=0,
+                min_queue_length=0,
+                max_queue_length=0,
+                average_queue_length=0.0,
+                enqueued=0,
+                dequeued=0,
+                last_enqueued_at=None,
+                last_dequeued_at=None,
+                queues={}
+            )
+
+        enqueued_at = [summary.last_enqueued_at for summary in summaries.values() if summary.last_enqueued_at]
+        dequeued_at = [summary.last_dequeued_at for summary in summaries.values() if summary.last_dequeued_at]
+
+        return QueueRegistryActivitySummary(
+            current_backlog=max(summary.current_backlog for summary in summaries.values()),
+            total_current_backlog=sum(summary.current_backlog for summary in summaries.values()),
+            publisher_count=len(summaries),
+            window_seconds=max(summary.window_seconds for summary in summaries.values()),
+            sample_count=sum(summary.sample_count for summary in summaries.values()),
+            min_queue_length=min(summary.min_queue_length for summary in summaries.values()),
+            max_queue_length=max(summary.max_queue_length for summary in summaries.values()),
+            average_queue_length=sum(summary.average_queue_length for summary in summaries.values()) / len(summaries),
+            enqueued=sum(summary.enqueued for summary in summaries.values()),
+            dequeued=sum(summary.dequeued for summary in summaries.values()),
+            last_enqueued_at=max(enqueued_at) if enqueued_at else None,
+            last_dequeued_at=max(dequeued_at) if dequeued_at else None,
+            queues=summaries
+        )
+
+    @staticmethod
+    def _coerce_name(name: str) -> str:
+        queue_name = name.strip()
+
+        if not queue_name:
+            raise ValueError('Queue name must not be empty')
+
+        return queue_name
+
+
+metric_queues = DataQueueRegistry()
+metric_queue = metric_queues.register('influxdb')

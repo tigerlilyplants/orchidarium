@@ -10,7 +10,7 @@ from typing import Any
 from cattrs import unstructure
 
 from orchidarium import env
-from orchidarium.data import metric_queue
+from orchidarium.data import metric_queues
 from orchidarium.runtime.state import read_runtime_state
 
 
@@ -44,7 +44,7 @@ def get_queue_summary() -> dict[str, Any]:
     if isinstance(queue_summary, dict):
         return queue_summary
 
-    return unstructure(metric_queue.activity_summary())
+    return unstructure(metric_queues.activity_summary())
 
 
 def _current_point_backlog() -> int:
