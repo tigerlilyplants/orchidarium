@@ -19,9 +19,7 @@
 
 `orchidarium` is an extensible environmental control platform for maintaining closed or confined spaces, intended to run as the operating system for Tiger Lily Plants' Vesta control module (named after the planet at the center of the plot in *Scavengers Reign*).
 
-It is designed around custom control loops that combine data from off-the-shelf sensors with electrical, HVAC, lighting, and fluid-handling components. It can monitor environmental targets, track drift, schedule custom behavior, move and mix fluids, and measure energy usage, and many other derivative metrics as well.
-
-<!-- This project is Raspberry Pi / Python-centric, gluing together backgrounds / experience rooted in DevOps, , hardware, HVAC / environmental control, terrariums / vivariums / aquariums (freshwater and saltwater), and plants. -->
+This project integrates off-the-shelf sensors with electrical, HVAC, lighting, and fluid-handling systems to monitor, automate, and optimize controlled environments. It supports environmental target tracking, drift, custom scheduling, fluid movement, mixing and flushing, energy measurement, and a wide range of derived operational metrics.
 
 ## Motivation
 
