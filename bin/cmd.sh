@@ -17,7 +17,9 @@ set -eo pipefail
 
 # Start the service.
 if command -v poetry >/dev/null 2>&1 && poetry env info -p >/dev/null 2>&1; then
-    exec poetry run orchidarium "$@"
-else
+    exec poetry run python -m orchidarium.entrypoint "$@"
+elif command -v orchidarium >/dev/null 2>&1; then
     exec orchidarium "$@"
+else
+    exec python -m orchidarium.entrypoint "$@"
 fi
