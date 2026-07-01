@@ -1,4 +1,4 @@
-# Orchidarium 🪴
+# Orchidarium
 
 ![GitHub Release](https://img.shields.io/github/v/release/tigerlilyplants/orchidarium)
 
@@ -6,7 +6,7 @@
   <img width="20%" src="./img/orchid.png" alt="orchid">
 </p>
 
-- [Orchidarium 🪴](#orchidarium-)
+- [Orchidarium](#orchidarium)
   - [How it works by example](#how-it-works-by-example)
   - [Development](#development)
     - [Docker Compose](#docker-compose)
