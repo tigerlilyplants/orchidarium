@@ -7,12 +7,15 @@
 </p>
 
 - [Orchidarium](#orchidarium)
+  - [About](#about)
   - [Motivation](#motivation)
   - [Documentation](#documentation)
     - [Runtime Hierarchy](#runtime-hierarchy)
   - [Development](#development)
     - [Docker Compose](#docker-compose)
       - [UI Display](#ui-display)
+
+## About
 
 `orchidarium` is an extensible environmental control platform for maintaining closed or confined spaces, intended to run as the operating system for Tiger Lily Plants' Vesta control module (named after the planet at the center of the plot in *Scavengers Reign*).
 
