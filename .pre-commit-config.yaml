@@ -47,7 +47,7 @@ repos:
   #     - id: circleci-config-validate
 
 -   repo: https://github.com/python-poetry/poetry
-    rev: 2.3.4
+    rev: 2.4.1
     hooks:
     -   id: poetry-lock
     -   id: poetry-check
@@ -71,7 +71,7 @@ repos:
     -   id: msg-issue-prefix
 
 -   repo: https://github.com/jsh9/pydoclint
-    rev: 0.8.3
+    rev: 0.9.0
     hooks:
     -   id: pydoclint
         args:
