@@ -6,56 +6,24 @@
   <img width="20%" src="./img/orchid.png" alt="orchid">
 </p>
 
-*Orchidarium* is a monitoring and control agent designed for terrariums that require precise environmental conditions, particularly high-humidity setups for mini orchids and reptiles. The project leverages key parameters such as humidity, temperature, and lighting while enabling automated control to maintain stable habitat conditions. Its goal is to simplify the management of delicate terrarium ecosystems and help keep both plants and animals thriving with minimal manual intervention.
+*Orchidarium* is a monitoring and control agent designed for terrariums that require precise environmental conditions, particularly high-humidity setups for mini and micro orchids. The project leverages key parameters such as humidity, nutrients, temperature, and lighting while enabling automated control to maintain stable habitat conditions. Its goal is to simplify the management of delicate terrarium ecosystems and help keep both plants and animals thriving with minimal manual intervention, replacing every point of contact with a configurable control loop.
 
-## Build
+See [BUILD.md](./BUILD.md) for terrarium build photos, sourced components, supported sensors, and notes on previous builds.
 
-<p align="left" width="100%">
-  <img width="75%" src="img/40DB1760-932C-47B8-96B4-398F92D82769_1_105_c.jpeg" alt="build">
-</p>
+## Table of Contents
 
-Here are a few recent photos from the hexagonal terrarium after several more plants settled in and started blooming.
-
-<p align="left" width="100%">
-  <img width="75%" src="./img/hexagonal-terrarium-2026-06.jpeg" alt="hexagonal terrarium with blooming plants">
-</p>
-
-<p align="left" width="100%">
-  <img width="24%" src="./img/utricularia-bloom-hexagonal-terrarium.jpeg" alt="Utricularia bloom in the hexagonal terrarium">
-  <img width="24%" src="./img/psygmorchis-pusilla-hexagonal-terrarium.jpeg" alt="Psygmorchis pusilla bloom in the hexagonal terrarium">
-  <img width="24%" src="./img/lepanthes-gargoyla-hexagonal-terrarium.jpeg" alt="Lepanthes gargoyla bloom in the hexagonal terrarium">
-</p>
-
-I've sourced a lot of components from various sites for this build.
-
-- Here's a [public Amazon list](https://www.amazon.com/hz/wishlist/ls/1ARZ5WK7A2QLO?ref_=wl_share) with most of the hardware I used to get this orchidarium off the ground.
-- I sourced the large cork bark log [from a seller on Etsy](https://www.etsy.com/listing/1855324948/oversize-cork-rounds-cut-to-length?ref=yr_purchases) who specializes in terrariums.
-- Many of the orchids that have been mounted in the terrarium are from ecuagenera, as well as a number of other retail sellers and auctions. Begonias and other terrestrial plants have been sourced from various sellers on Etsy, including [Botanicaz](https://www.etsy.com/shop/Botanicaz?ref=yr_purchases) and [FloraEpiphytica](https://www.etsy.com/shop/FloraEpiphytica?ref=yr_purchases).
-
-### Sensors
-
-Current supported sensors by this Python package include a
-
-- [Humidity and Temperature sensor](https://www.amazon.com/dp/B08BYLZ3ML?ref=ppx_yo2ov_dt_b_fed_asin_title): a waterproof temperature and humidity sensor.
-- [Soil metrics](https://www.amazon.com/dp/B0FJFK9PPT?ref=ppx_yo2ov_dt_b_fed_asin_title): a sensor for collecting soil analytics.
-
-### Previous builds
-
-<details>
-  <summary><b>Show</b></summary>
-
-  This is the second terrarium I've built, following the first (pictured below).
-
-  <p align="left" width="100%">
-    <img width="75%" src="./img/D9408F09-C330-4E73-A14A-539844C02985_1_105_c.jpeg" alt="first terrarium I built">
-  </p>
-</details>
+- [Orchidarium 🪴](#orchidarium-)
+  - [Table of Contents](#table-of-contents)
+  - [How it works by example](#how-it-works-by-example)
+  - [Development](#development)
+    - [Setup](#setup)
+    - [Docker Compose](#docker-compose)
 
 ## How it works by example
 
 See the below screenshots from the Grafana dashboard.
 
-## Local development
+## Development
 
 ### Setup
 
@@ -64,8 +32,18 @@ See the below screenshots from the Grafana dashboard.
 3. Source [`./scripts/.env.sh`](./scripts/.env.sh) to get started with environment variables populated from a Linux pass store.
 4. The [`compose.yaml`](./compose.yaml) contains the configuration required to get this project started.
 
+### Docker Compose
+
+Start the local stack. This generates the self-signed Grafana certificates if they do not already exist, then runs `docker compose up -d --build`.
+
    ```text
-   docker compose up -d --build
+   ./scripts/local/up.sh
+   ```
+
+Stop the local stack.
+
+   ```text
+   ./scripts/local/down.sh
    ```
 
 

@@ -63,7 +63,6 @@ services:
       resources:
         limits:
           cpus: '1.0'
-          memory: 1G
         reservations:
           cpus: '0.25'
   influxdb:
@@ -91,10 +90,8 @@ services:
       resources:
         limits:
           cpus: '1.0'
-          memory: 1G
         reservations:
           cpus: '0.25'
-          # memory reservations are purposely left out here because it will show up as a soft memory limit, and influxdb does not support this.
   mysql:
     image: mysql:9.5
     volumes:
@@ -154,7 +151,6 @@ services:
       resources:
         limits:
           cpus: '1.0'
-          memory: 1G
         reservations:
           cpus: '1.0'
     platform: linux/arm64
