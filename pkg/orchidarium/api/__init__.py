@@ -29,8 +29,10 @@ __all__ = [
 
 
 from orchidarium.api.health import create_healthcheck_api
+from orchidarium.api.queue import create_queue_api
 from orchidarium.api.sensors import create_sensor_api
 
 
 create_healthcheck_api(app)
+create_queue_api(app)
 create_sensor_api(app)

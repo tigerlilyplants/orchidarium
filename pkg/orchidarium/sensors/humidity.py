@@ -4,38 +4,35 @@ import re
 import logging
 
 from usb.core import find
-from orchidarium import env
+from orchidarium.data.queue import MetricDatum
 from orchidarium.sensors import Sensor
 from orchidarium.lib.bus import InterfaceClaim, read
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from orchidarium.publishers import Publisher
+    from orchidarium.data.queue import MetricQueueSink
 
 
 log = logging.getLogger(__name__)
 
 
 class HumiditySensor(Sensor):
+    enabled = False
 
+    USB_VENDOR_ID: int = 0x0487
+    USB_PRODUCT_ID: int = 0x0007
     _TEMPERATURE_FAHRENHEIT: float = 0.0
     _HUMIDITY: float = 0.0
 
     def collect(self) -> bool:
         device = find(
-            idVendor=int(
-                '0x0487',
-                base=16
-            ),
-            idProduct=int(
-                '0x0007',
-                base=16
-            )
+            idVendor=self.USB_VENDOR_ID,
+            idProduct=self.USB_PRODUCT_ID
         )
 
         if device is None:
             # Exit early if the USB device is not available.
-            log.error(f'USB device with idVendor "{env["USB_VENDOR_ID"]}" and idProduct "{env["USB_PRODUCT_ID"]}" not found, exiting.')
+            log.error(f'USB device with idVendor "{self.USB_VENDOR_ID:#06x}" and idProduct "{self.USB_PRODUCT_ID:#06x}" not found, exiting.')
 
             self._collection = False
 
@@ -71,7 +68,18 @@ class HumiditySensor(Sensor):
         self._collection = False
         return False
 
-    def publish(self, publisher: Publisher) -> bool:
-        ...
+    def publish(self, data_queue: MetricQueueSink) -> bool:
+        data_queue.append(
+            MetricDatum(
+                measurement='environment',
+                tags={
+                    'sensor': self.__class__.__name__.lower().removesuffix('sensor'),
+                },
+                fields={
+                    'temperature_fahrenheit': self._TEMPERATURE_FAHRENHEIT,
+                    'relative_humidity': self._HUMIDITY,
+                }
+            )
+        )
         self._publication = True
         return True

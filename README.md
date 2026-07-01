@@ -1,93 +1,120 @@
-# Orchidarium 🪴
+# Orchidarium
 
-![GitHub Release](https://img.shields.io/github/v/release/tigerlilyplants/orchidarium)
+![GitHub Release](https://img.shields.io/github/v/release/tigerlilyplants/orchidarium) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 <p align="left" width="100%">
   <img width="20%" src="./img/orchid.png" alt="orchid">
 </p>
 
-*Orchidarium* is a monitoring and control agent designed for terrariums that require precise environmental conditions, particularly high-humidity setups for mini orchids and reptiles. The project leverages key parameters such as humidity, temperature, and lighting while enabling automated control to maintain stable habitat conditions. Its goal is to simplify the management of delicate terrarium ecosystems and help keep both plants and animals thriving with minimal manual intervention.
+- [Orchidarium](#orchidarium)
+  - [About](#about)
+  - [Motivation](#motivation)
+  - [Documentation](#documentation)
+    - [Runtime Hierarchy](#runtime-hierarchy)
+  - [Development](#development)
+    - [Docker Compose](#docker-compose)
+      - [UI Display](#ui-display)
 
-## Build
+## About
 
-<p align="left" width="100%">
-  <img width="75%" src="img/40DB1760-932C-47B8-96B4-398F92D82769_1_105_c.jpeg" alt="build">
-</p>
+`orchidarium` is an extensible environmental control platform for maintaining closed or confined spaces, intended to run as the operating system for Tiger Lily Plants' Vesta control module (named after the planet at the center of the plot in *Scavengers Reign*).
 
-Here are a few recent photos from the hexagonal terrarium after several more plants settled in and started blooming.
+It is designed around custom control loops that combine data from off-the-shelf sensors with electrical, HVAC, lighting, and fluid-handling components. It can monitor environmental targets, track drift, schedule custom behavior, move and mix fluids, and measure energy usage, and many other derivative metrics as well.
 
-<p align="left" width="100%">
-  <img width="75%" src="./img/hexagonal-terrarium-2026-06.jpeg" alt="hexagonal terrarium with blooming plants">
-</p>
+<!-- This project is Raspberry Pi / Python-centric, gluing together backgrounds / experience rooted in DevOps, , hardware, HVAC / environmental control, terrariums / vivariums / aquariums (freshwater and saltwater), and plants. -->
 
-<p align="left" width="100%">
-  <img width="24%" src="./img/utricularia-bloom-hexagonal-terrarium.jpeg" alt="Utricularia bloom in the hexagonal terrarium">
-  <img width="24%" src="./img/psygmorchis-pusilla-hexagonal-terrarium.jpeg" alt="Psygmorchis pusilla bloom in the hexagonal terrarium">
-  <img width="24%" src="./img/lepanthes-gargoyla-hexagonal-terrarium.jpeg" alt="Lepanthes gargoyla bloom in the hexagonal terrarium">
-</p>
+## Motivation
 
-I've sourced a lot of components from various sites for this build.
+As I've progressed through my hobbies, from plants -> building terrariums -> freshwater fish -> saltwater fish, I've noticed a trend of the following issues that the individual consumer markets address with different, oftentimes awkwardly composable, products (I surmise similar problems exist in other fields as well).
 
-- Here's a [public Amazon list](https://www.amazon.com/hz/wishlist/ls/1ARZ5WK7A2QLO?ref_=wl_share) with most of the hardware I used to get this orchidarium off the ground.
-- I sourced the large cork bark log [from a seller on Etsy](https://www.etsy.com/listing/1855324948/oversize-cork-rounds-cut-to-length?ref=yr_purchases) who specializes in terrariums.
-- Many of the orchids that have been mounted in the terrarium are from ecuagenera, as well as a number of other retail sellers and auctions. Begonias and other terrestrial plants have been sourced from various sellers on Etsy, including [Botanicaz](https://www.etsy.com/shop/Botanicaz?ref=yr_purchases) and [FloraEpiphytica](https://www.etsy.com/shop/FloraEpiphytica?ref=yr_purchases).
+1. Maintaining and monitoring adequate environmental conditions in confined spaces, whether liquid- or gas / atmosphere-based, is hard, and often requires different controllers and sensors to achieve long-term stability.
+2. Dosing solids and liquids at the right times and in the right quantities could mean life or death for the occupants of the confined space.
+3. Changing values too quickly can mean life or death of the occupants.
+4. Complex timing and scheduling of jobs is often impossible or a lot of work to configure and ends up getting done manually on a schedule.
+5. Reliable feedback about how the action that took place corrected a problem is nonexistent or difficult to retrieve / obtain.
 
-### Sensors
+The products I've yet tried have not accomplished the basic control flow and user experience that I want on every tank and shelf:
 
-Current supported sensors by this Python package include a
+- A centralized set of configurable, extendable and clear control loops across disciplines, with associated metrics and operations.
+- Dependable, complex timing for scheduled / recurring / one-off jobs.
+- Feedback about performance / general metrics.
 
-- [Humidity and Temperature sensor](https://www.amazon.com/dp/B08BYLZ3ML?ref=ppx_yo2ov_dt_b_fed_asin_title): a waterproof temperature and humidity sensor.
-- [Soil metrics](https://www.amazon.com/dp/B0FJFK9PPT?ref=ppx_yo2ov_dt_b_fed_asin_title): a sensor for collecting soil analytics.
+I also want it to be small.
 
-### Previous builds
+<!-- See [BUILD.md](./BUILD.md) for terrarium build photos, sourced components, supported sensors, and notes on previous builds. -->
 
-<details>
-  <summary><b>Show</b></summary>
+## Documentation
 
-  This is the second terrarium I've built, following the first (pictured below).
+### Runtime Hierarchy
 
-  <p align="left" width="100%">
-    <img width="75%" src="./img/D9408F09-C330-4E73-A14A-539844C02985_1_105_c.jpeg" alt="first terrarium I built">
-  </p>
-</details>
+Orchidarium has one supervisor process and separate child processes for each long-running runtime domain. Metrics, API, hardware, and UI run today.
 
-## How it works by example
+```text
+tini
+└── orchidarium
+    ├── metrics / orchidarium-metrics
+    │   ├── metrics main thread
+    │   │   ├── metrics queue fanout
+    │   │   ├── sensor collection interval loop
+    │   │   ├── sensor ThreadPoolExecutor
+    │   │   │   └── sensor_* worker thread(s)
+    │   │   └── publisher ThreadPoolExecutor
+    │   │       └── publisher_* worker thread(s)
+    ├── api / orchidarium-api
+    │   └── Flask main thread
+    │       ├── /health
+    │       ├── /ready
+    │       ├── /queue/backlog
+    │       └── /sensors/active
+    ├── hardware / orchidarium-hardware
+    │   └── hardware main thread
+    └── ui / orchidarium-ui
+        └── Qt/QML main thread
+```
 
-See the below screenshots from the Grafana dashboard.
+- `orchidarium command`: CLI entrypoint in `orchidarium.entrypoint`; calls `orchidarium.daemon.run()`.
+- `orchidarium`: supervisor process title; starts child processes with `ProcessPoolExecutor` from `orchidarium.daemon._processes`.
+- `metrics`: child process spec; process title is `orchidarium-metrics`; owns metrics queue fanout, sensor collection, and database publication.
+- `api`: child process spec; process title is `orchidarium-api`; serves Flask API endpoints using runtime snapshots published by the metrics process.
+- `hardware`: child process spec; process title is `orchidarium-hardware`; currently an idle scaffold for relay and device control. It publishes a heartbeat used by `/health` and `/ready`.
+- `ui`: child process spec; process title is `orchidarium-ui`; runs the Qt/QML control surface from `orchidarium.ui`.
+- `sensor_*`: worker threads created by the metrics process during each collection interval, with one submitted task per discovered sensor.
+- `publisher_*`: worker threads created only for publisher queues with backlog, with one queue per database backend.
 
-## Local development
+Each publisher has its own queue. Sensors publish each collected metric datum into every publisher queue, and each publisher is responsible for draining only its backend-specific queue.
 
-### Setup
+`/ready` fails when any publisher queue backlog reaches `MAX_POINT_BACKLOG`, so schedulers can stop sending new work to a container that is falling behind.
 
-1. Copy the [`udev.rules`](./rules/.rules) to `/etc/udev/rules.d/orchidarium.rules`. You'll notice I've matched the IDs of the USB devices purchased at the links above to the IDs found via [`lsusb -v`](./refs/lsusb.out).
-2. Plug in USB devices or run `sudo udevadm control --reload-rules` to reload rules.
-3. Source [`./scripts/.env.sh`](./scripts/.env.sh) to get started with environment variables populated from a Linux pass store.
-4. The [`compose.yaml`](./compose.yaml) contains the configuration required to get this project started.
+## Development
+
+### Docker Compose
+
+Start the local stack. This installs and reloads the Orchidarium udev rules when udev is available, sources [`scripts/.env.sh`](./scripts/.env.sh), generates the self-signed Grafana certificates if they do not already exist, then runs `docker compose up -d --build`.
 
    ```text
-   docker compose up -d --build
+   ./scripts/local/up.sh
    ```
 
+Stop the local stack. This runs `docker compose down`, removes the Orchidarium udev rules when udev is available, then reloads udev.
 
-```
-$ sudo i2cdetect -y 1 -F
-Functionalities implemented by /dev/i2c-1:
-I2C                              yes
-SMBus Quick Command              yes
-SMBus Send Byte                  yes
-SMBus Receive Byte               yes
-SMBus Write Byte                 yes
-SMBus Read Byte                  yes
-SMBus Write Word                 yes
-SMBus Read Word                  yes
-SMBus Process Call               no
-SMBus Block Write                yes
-SMBus Block Read                 yes
-SMBus Block Process Call         no
-SMBus PEC                        no
-I2C Block Write                  yes
-I2C Block Read                   yes
-SMBus Host Notify                no
-10-bit addressing                yes
-Target mode                      no
-```
+   ```text
+   ./scripts/local/down.sh
+   ```
+
+#### UI Display
+
+The UI process uses Wayland by default on Linux / Raspberry Pi. [`scripts/.env.sh`](./scripts/.env.sh) sets `QT_QPA_PLATFORM=wayland`, mounts the host user's `WAYLAND_RUNTIME_DIR` at `/wayland-runtime`, and runs the Orchidarium container as the current UID / GID so the Wayland socket can be opened.
+
+Run `./scripts/local/up.sh` from the same desktop user that owns the Wayland session. If the compositor uses a different socket name, set it before startup:
+
+   ```text
+   WAYLAND_DISPLAY=wayland-1 ./scripts/local/up.sh
+   ```
+
+On macOS, Docker Desktop does not expose a host Wayland session. Local startup defaults to `QT_QPA_PLATFORM=offscreen`, `QT_QUICK_BACKEND=software`, and the private `/tmp/orchidarium` runtime directory so the stack can run for testing without a display socket.
+
+To display the UI on macOS, run an X server such as XQuartz and override the backend:
+
+   ```text
+   QT_QPA_PLATFORM=xcb DISPLAY=host.docker.internal:0 WAYLAND_RUNTIME_DIR=/tmp ./scripts/local/up.sh
+   ```

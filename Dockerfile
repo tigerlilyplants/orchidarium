@@ -21,7 +21,39 @@ LABEL org.opencontainers.image.documentatio="https://github.com/tigerlilyplants/
 USER root
 
 RUN apt update \
-    && apt install -y --no-install-recommends libhidapi-dev \
+    && apt install -y --no-install-recommends \
+        libdbus-1-3 \
+        libegl1 \
+        libfontconfig1 \
+        libgl1 \
+        libglib2.0-0 \
+        libhidapi-dev \
+        libice6 \
+        libopengl0 \
+        libsm6 \
+        libwayland-cursor0 \
+        libwayland-egl1 \
+        libx11-6 \
+        libx11-xcb1 \
+        libxcb-cursor0 \
+        libxcb-icccm4 \
+        libxcb-image0 \
+        libxcb-keysyms1 \
+        libxcb-randr0 \
+        libxcb-render-util0 \
+        libxcb-render0 \
+        libxcb-shape0 \
+        libxcb-shm0 \
+        libxcb-sync1 \
+        libxcb-util1 \
+        libxcb-xfixes0 \
+        libxcb-xinerama0 \
+        libxcb-xkb1 \
+        libxcb1 \
+        libxi6 \
+        libxkbcommon-x11-0 \
+        libxkbcommon0 \
+        libxrender1 \
     && rm -rf /var/lib/apt/lists/*
 
 ENV TINI_VERSION=${TINI_VERSION}
@@ -35,12 +67,13 @@ RUN groupadd orchidarium \
 
 WORKDIR /opt/orchidarium
 
-# Ensure that the 'orchidarium' user owns the directory and set up a Git hook that prevents the user from pushing.
-RUN chown -R orchidarium:orchidarium .
+# Ensure that the 'orchidarium' user owns the working directories.
+RUN mkdir -p /wayland-runtime \
+    && chown -R orchidarium:orchidarium . /wayland-runtime
 
 USER 10001
 
-COPY --chown=orchidarium:orchidarium --chmod=550 bin/cmd.sh /cmd.sh
+COPY --chown=orchidarium:orchidarium --chmod=555 bin/cmd.sh /cmd.sh
 
 ENTRYPOINT ["/tini", "--"]
 CMD [ "/cmd.sh" ]
@@ -65,6 +98,12 @@ RUN poetry install \
 
 FROM package-source AS production
 
-RUN python -m pip install --user --no-cache-dir --no-compile . \
+USER root
+
+RUN python -m pip install --no-cache-dir --no-compile . \
     && python -c "import orchidarium" \
+    && python -c "from PySide6.QtGui import QGuiApplication" \
+    && python -c "from shutil import which; assert which('orchidarium'), 'orchidarium command not installed'" \
     && rm -rf ./pkg ./README.md ./LICENSE ./poetry.lock ./pyproject.toml
+
+USER 10001

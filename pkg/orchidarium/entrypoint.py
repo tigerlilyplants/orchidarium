@@ -7,12 +7,12 @@ from __future__ import annotations
 
 import sys
 
-from orchidarium.daemon import daemon
+from orchidarium.daemon import run
 
 
 def cli() -> None:
     sys.exit(
-        daemon()
+        run()
     )
 
 

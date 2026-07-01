@@ -3,10 +3,10 @@ from __future__ import annotations
 import logging
 
 from abc import abstractmethod, ABC
-from typing import TYPE_CHECKING
+from typing import ClassVar, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from orchidarium.publishers._base import Publisher
+    from orchidarium.data.queue import MetricQueueSink
     from typing import Literal
 
 
@@ -14,6 +14,7 @@ log = logging.getLogger(__name__)
 
 
 class Sensor(ABC):
+    enabled: ClassVar[bool] = True
 
     def __init__(self, scale: Literal['F', 'C'] = 'F', default_temperature: float = 0.0) -> None:
         self.scale = scale
@@ -75,12 +76,12 @@ class Sensor(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def publish(self, publisher: Publisher) -> bool:
+    def publish(self, data_queue: MetricQueueSink) -> bool:
         """
-        Publish data to a Publisher.
+        Publish collected data to a queue.
 
         Args:
-            publisher (Publisher): A Publisher that defines a 'publish_datapoint'-method.
+            data_queue (MetricQueueSink): sink that accepts collected metric data.
 
         Raises:
             NotImplementedError: due to this being an abstract method.
@@ -90,12 +91,12 @@ class Sensor(ABC):
         """
         raise NotImplementedError
 
-    def __call__(self, publisher: Publisher) -> None:
+    def __call__(self, data_queue: MetricQueueSink) -> None:
         """
-        Make Sensors callable, wherein data collection and publication is carried out.
+        Make Sensors callable, wherein data collection and enqueueing is carried out.
         """
         if not self.collect():
             raise RuntimeError(f'Failed to collect data for sensor "{self.__class__.__name__}"')
 
-        if not self.publish(publisher):
+        if not self.publish(data_queue):
             raise RuntimeError(f'Failed to publish data for sensor "{self.__class__.__name__}"')

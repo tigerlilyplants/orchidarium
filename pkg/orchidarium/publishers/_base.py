@@ -6,10 +6,9 @@ ABC that defines the API for publishing metrics.
 from __future__ import annotations
 
 from abc import abstractmethod, ABC
-from typing import TYPE_CHECKING
+from typing import Any, Self
 
-if TYPE_CHECKING:
-    from typing import Any
+from orchidarium.data.queue import DataQueue, MetricDatum
 
 
 class Publisher(ABC):
@@ -19,5 +18,58 @@ class Publisher(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def submit(self, datum: Any) -> bool:
+    def submit(self, datum: MetricDatum) -> bool:
         raise NotImplementedError
+
+    def __enter__(self) -> Self:
+        """
+        Open publisher resources for context-manager usage.
+
+        Returns:
+            Self: publisher instance.
+        """
+        self.connect()
+        return self
+
+    def __exit__(self, *args: Any) -> Any:
+        """
+        Close publisher resources for context-manager usage.
+
+        Args:
+            *args (Any): exception details supplied by the context manager.
+
+        Returns:
+            Any: optional context-manager suppression value.
+        """
+        return None
+
+    def publish(self, data_queue: DataQueue) -> int:
+        """
+        Pull data points from a queue and submit them to this publisher.
+
+        Args:
+            data_queue (DataQueue): queue of metric data to publish.
+
+        Returns:
+            int: number of data points submitted.
+
+        Raises:
+            RuntimeError: if a datum is pulled from the queue but submission returns False.
+            Exception: any exception raised by submit after the datum has been restored to the queue.
+        """
+        submitted = 0
+
+        while True:
+            datum = data_queue.pull()
+            if datum is None:
+                return submitted
+
+            try:
+                if not self.submit(datum):
+                    raise RuntimeError(f'Failed to submit metric datum "{datum}"')
+                submitted += 1
+            except Exception:
+                data_queue.append(datum)
+                raise
+            finally:
+                data_queue.task_done()
