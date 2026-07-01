@@ -1,5 +1,5 @@
 """
-Provide a thread-safe queue for sensor data points.
+Provide a thread-safe queue for sensor data points that have been collected, but not yet published.
 """
 
 

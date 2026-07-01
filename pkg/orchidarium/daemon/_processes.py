@@ -37,6 +37,18 @@ def metrics_process_target() -> int:
     return _run_metrics_process()
 
 
+def api_process_target() -> int:
+    """
+    Run the API process target.
+
+    Returns:
+        int: process exit code.
+    """
+    from orchidarium.daemon.api import run_api_process as _run_api_process
+
+    return _run_api_process()
+
+
 def hardware_process_target() -> int:
     """
     Run the hardware process target.
@@ -53,6 +65,10 @@ PROCESS_SPECS = (
     ProcessSpec(
         name='metrics',
         target=metrics_process_target
+    ),
+    ProcessSpec(
+        name='api',
+        target=api_process_target
     ),
     ProcessSpec(
         name='hardware',

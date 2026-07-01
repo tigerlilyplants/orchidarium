@@ -3,7 +3,7 @@ Run and supervise Orchidarium daemon processes.
 """
 
 
-from orchidarium.daemon.processes import run
+from orchidarium.daemon._processes import run
 
 
 __all__ = [

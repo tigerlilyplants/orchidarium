@@ -20,7 +20,7 @@ See [BUILD.md](./BUILD.md) for terrarium build photos, sourced components, suppo
 
 ### Runtime Hierarchy
 
-Orchidarium has one supervisor process and separate child processes for each long-running runtime domain. Metrics and hardware run today; the UI process is planned but not started yet.
+Orchidarium has one supervisor process and separate child processes for each long-running runtime domain. Metrics, API, and hardware run today; the UI process is planned but not started yet.
 
 ```text
 orchidarium command
@@ -32,7 +32,8 @@ orchidarium command
     │   │   ├── sensor ThreadPoolExecutor
     │   │   │   └── sensor_* worker thread(s)
     │   │   └── InfluxDB publisher
-    │   └── metrics-api thread
+    ├── api / orchidarium-api
+    │   └── Flask main thread
     │       ├── /health
     │       ├── /ready
     │       ├── /queue/backlog
@@ -44,11 +45,11 @@ orchidarium command
 ```
 
 - `orchidarium command`: CLI entrypoint in `orchidarium.entrypoint`; calls `orchidarium.daemon.run()`.
-- `orchidarium`: supervisor process title; starts child processes with `ProcessPoolExecutor` from `orchidarium.daemon.processes`.
-- `metrics`: child process spec; process title is `orchidarium-metrics`; owns metrics queue pub/sub, the Flask API, sensor collection, and InfluxDB publication.
+- `orchidarium`: supervisor process title; starts child processes with `ProcessPoolExecutor` from `orchidarium.daemon._processes`.
+- `metrics`: child process spec; process title is `orchidarium-metrics`; owns metrics queue pub/sub, sensor collection, and InfluxDB publication.
+- `api`: child process spec; process title is `orchidarium-api`; serves Flask API endpoints using runtime snapshots published by the metrics process.
 - `hardware`: child process spec; process title is `orchidarium-hardware`; currently an idle scaffold for relay and device control.
 - `ui`: planned future child process; not registered in `PROCESS_SPECS` yet.
-- `metrics-api`: daemon thread inside `orchidarium-metrics`; health and backlog state are local to the metrics process.
 - `sensor_*`: worker threads created by the metrics process during each collection interval, with one submitted task per discovered sensor.
 
 The publisher is not a separate thread yet. It runs after sensor collection completes in the metrics process main thread, pulling data from `metric_queue` and writing it to InfluxDB.
