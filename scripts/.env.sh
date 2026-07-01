@@ -10,6 +10,7 @@ INFLUXDB_HOST='influxdb:8086'
 INFLUXDB_ORG='orchidarium'
 INTERVAL='60'
 INFLUXDB_TOKEN="orchidarium"
+MAX_POINT_BACKLOG='1000'
 
 export DEBUG
 export HEALTHCHECK_PORT
@@ -18,6 +19,7 @@ export INFLUXDB_HOST
 export INFLUXDB_ORG
 export INTERVAL
 export INFLUXDB_TOKEN
+export MAX_POINT_BACKLOG
 
 
 # InfluxDB initialization and Grafana datasource credentials.

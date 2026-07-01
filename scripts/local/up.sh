@@ -74,6 +74,7 @@ _require_environment()
         INFLUXDB_USERNAME \
         INFLUXDB_PASSWORD \
         INTERVAL \
+        MAX_POINT_BACKLOG \
         MYSQL_DATABASE \
         MYSQL_PASSWORD \
         MYSQL_ROOT_PASSWORD \

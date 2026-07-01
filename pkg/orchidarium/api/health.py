@@ -10,7 +10,14 @@ import logging
 from flask import Flask
 from flask.typing import ResponseReturnValue
 
-from orchidarium.runtime.health import get_thread_pool_health, is_thread_pool_healthy, is_thread_pool_ready
+from orchidarium.runtime.health import (
+    get_hardware_process_health,
+    get_thread_pool_health,
+    is_hardware_process_healthy,
+    is_thread_pool_healthy,
+    is_thread_pool_ready
+)
+from orchidarium.runtime.queue import get_point_backlog_health, is_point_backlog_ready
 
 
 log = logging.getLogger(__name__)
@@ -25,6 +32,8 @@ def _health_response(healthy: bool) -> ResponseReturnValue:
     return (
         {
             'status': 'OK' if healthy else 'Failed',
+            'hardware_process': get_hardware_process_health(),
+            'point_backlog': get_point_backlog_health(),
             'thread_pool': get_thread_pool_health()
         },
         HTTPStatus.OK if healthy else HTTPStatus.SERVICE_UNAVAILABLE
@@ -50,11 +59,16 @@ def create_healthcheck_api(app: Flask) -> None:
             ResponseReturnValue: an object with schema like
 
             {
+                "hardware_process": {},
+                "point_backlog": {},
                 "status": "OK",
                 "thread_pool": {}
             }
         """
-        return _health_response(is_thread_pool_healthy())
+        return _health_response(
+            is_thread_pool_healthy()
+            and is_hardware_process_healthy()
+        )
 
     @app.get('/ready')
     def readiness() -> ResponseReturnValue:
@@ -65,8 +79,14 @@ def create_healthcheck_api(app: Flask) -> None:
             ResponseReturnValue: an object with schema like
 
             {
+                "hardware_process": {},
+                "point_backlog": {},
                 "status": "OK",
                 "thread_pool": {}
             }
         """
-        return _health_response(is_thread_pool_ready())
+        return _health_response(
+            is_thread_pool_ready()
+            and is_hardware_process_healthy()
+            and is_point_backlog_ready()
+        )

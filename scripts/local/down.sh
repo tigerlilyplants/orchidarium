@@ -41,6 +41,7 @@ _set_default_environment()
     export INFLUXDB_USERNAME="${INFLUXDB_USERNAME:-}"
     export INFLUXDB_PASSWORD="${INFLUXDB_PASSWORD:-}"
     export INTERVAL="${INTERVAL:-}"
+    export MAX_POINT_BACKLOG="${MAX_POINT_BACKLOG:-}"
     export MYSQL_DATABASE="${MYSQL_DATABASE:-}"
     export MYSQL_PASSWORD="${MYSQL_PASSWORD:-}"
     export MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-}"

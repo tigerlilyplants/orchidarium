@@ -7,12 +7,10 @@ from http import HTTPStatus
 
 import logging
 
-from cattrs import unstructure
 from flask import Flask
 from flask.typing import ResponseReturnValue
 
-from orchidarium.data import metric_queue
-from orchidarium.runtime.state import read_runtime_state
+from orchidarium.runtime.queue import get_queue_summary
 
 log = logging.getLogger(__name__)
 
@@ -40,12 +38,7 @@ def create_queue_api(app: Flask) -> None:
         Returns:
             ResponseReturnValue: an object with queue backlog metadata.
         """
-        queue_summary = read_runtime_state().get('queue')
-
-        if not isinstance(queue_summary, dict):
-            queue_summary = unstructure(metric_queue.activity_summary())
-
         return (
-            queue_summary,
+            get_queue_summary(),
             HTTPStatus.OK
         )

@@ -23,7 +23,7 @@ See [BUILD.md](./BUILD.md) for terrarium build photos, sourced components, suppo
 Orchidarium has one supervisor process and separate child processes for each long-running runtime domain. Metrics, API, and hardware run today; the UI process is planned but not started yet.
 
 ```text
-orchidarium command
+tini
 └── orchidarium
     ├── metrics / orchidarium-metrics
     │   ├── metrics main thread
@@ -48,11 +48,13 @@ orchidarium command
 - `orchidarium`: supervisor process title; starts child processes with `ProcessPoolExecutor` from `orchidarium.daemon._processes`.
 - `metrics`: child process spec; process title is `orchidarium-metrics`; owns metrics queue pub/sub, sensor collection, and InfluxDB publication.
 - `api`: child process spec; process title is `orchidarium-api`; serves Flask API endpoints using runtime snapshots published by the metrics process.
-- `hardware`: child process spec; process title is `orchidarium-hardware`; currently an idle scaffold for relay and device control.
+- `hardware`: child process spec; process title is `orchidarium-hardware`; currently an idle scaffold for relay and device control. It publishes a heartbeat used by `/health` and `/ready`.
 - `ui`: planned future child process; not registered in `PROCESS_SPECS` yet.
 - `sensor_*`: worker threads created by the metrics process during each collection interval, with one submitted task per discovered sensor.
 
 The publisher is not a separate thread yet. It runs after sensor collection completes in the metrics process main thread, pulling data from `metric_queue` and writing it to InfluxDB.
+
+`/ready` fails when the published point backlog reaches `MAX_POINT_BACKLOG`, so schedulers can stop sending new work to a container that is falling behind.
 
 ## Development
 

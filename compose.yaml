@@ -136,13 +136,14 @@ services:
       - INFLUXDB_ORG=${INFLUXDB_ORG}
       - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
       - INTERVAL=${INTERVAL}
+      - MAX_POINT_BACKLOG=${MAX_POINT_BACKLOG}
     ports:
       # Healthcheck is served on port 8085 on localhost.
       - '127.0.0.1:8085:8085'
     restart: unless-stopped
     healthcheck:
       test: >
-        curl -sL http://localhost:8085/health && curl -sL http://localhost:8085/ready
+        curl -fsL http://localhost:8085/health && curl -fsL http://localhost:8085/ready
       start_period: 5s
       interval: 30s
       timeout: 5s
@@ -157,6 +158,9 @@ services:
     platform: linux/arm64
     privileged: true
     read_only: true
+    tmpfs:
+      # Runtime API snapshots shared between child processes.
+      - /tmp/orchidarium:size=4m,uid=10001,gid=10001,mode=700
 volumes:
   mysql-data:
     driver: local
