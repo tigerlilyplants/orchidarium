@@ -134,12 +134,13 @@ services:
       - /dev/bus/usb:/dev/bus/usb:ro
       # Wayland display socket from the host desktop session.
       - type: bind
-        source: ${XDG_RUNTIME_DIR}
-        target: ${XDG_RUNTIME_DIR}
+        source: ${WAYLAND_RUNTIME_DIR}
+        target: ${WAYLAND_CONTAINER_RUNTIME_DIR}
         bind:
           create_host_path: false
     environment:
       - DEBUG=${DEBUG}
+      - DISPLAY=${DISPLAY}
       - HEALTHCHECK_PORT=${HEALTHCHECK_PORT}
       - HOME=${ORCHIDARIUM_HOME}
       - INFLUXDB_DATABASE=${INFLUXDB_DATABASE}
@@ -150,11 +151,12 @@ services:
       - MAX_POINT_BACKLOG=${MAX_POINT_BACKLOG}
       - ORCHIDARIUM_RUNTIME_DIR=${ORCHIDARIUM_RUNTIME_DIR}
       - QT_QPA_PLATFORM=${QT_QPA_PLATFORM}
+      - QT_QUICK_BACKEND=${QT_QUICK_BACKEND}
       - TMPDIR=${TMPDIR}
       - WAYLAND_DISPLAY=${WAYLAND_DISPLAY}
       - XDG_CACHE_HOME=${XDG_CACHE_HOME}
       - XDG_CONFIG_HOME=${XDG_CONFIG_HOME}
-      - XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR}
+      - XDG_RUNTIME_DIR=${ORCHIDARIUM_XDG_RUNTIME_DIR}
     ports:
       # Healthcheck is served on port 8085 on localhost.
       - '127.0.0.1:8085:8085'

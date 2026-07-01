@@ -12,6 +12,7 @@
     - [Runtime Hierarchy](#runtime-hierarchy)
   - [Development](#development)
     - [Docker Compose](#docker-compose)
+      - [UI Display](#ui-display)
 
 `orchidarium` is an extensible environmental control platform for maintaining closed or confined spaces, intended to run as the operating system for Tiger Lily Plants' Vesta control module (named after the planet at the center of the plot in *Scavengers Reign*).
 
@@ -95,12 +96,20 @@ Stop the local stack. This runs `docker compose down`, removes the Orchidarium u
    ./scripts/local/down.sh
    ```
 
-#### Wayland Display
+#### UI Display
 
-The UI process uses Wayland by default. [`scripts/.env.sh`](./scripts/.env.sh) sets `QT_QPA_PLATFORM=wayland`, points `XDG_RUNTIME_DIR` at the current user's runtime directory, and runs the Orchidarium container as the current UID / GID so the Wayland socket can be opened.
+The UI process uses Wayland by default on Linux / Raspberry Pi. [`scripts/.env.sh`](./scripts/.env.sh) sets `QT_QPA_PLATFORM=wayland`, mounts the host user's `WAYLAND_RUNTIME_DIR` at `/wayland-runtime`, and runs the Orchidarium container as the current UID / GID so the Wayland socket can be opened.
 
 Run `./scripts/local/up.sh` from the same desktop user that owns the Wayland session. If the compositor uses a different socket name, set it before startup:
 
    ```text
    WAYLAND_DISPLAY=wayland-1 ./scripts/local/up.sh
+   ```
+
+On macOS, Docker Desktop does not expose a host Wayland session. Local startup defaults to `QT_QPA_PLATFORM=offscreen`, `QT_QUICK_BACKEND=software`, and the private `/tmp/orchidarium` runtime directory so the stack can run for testing without a display socket.
+
+To display the UI on macOS, run an X server such as XQuartz and override the backend:
+
+   ```text
+   QT_QPA_PLATFORM=xcb DISPLAY=host.docker.internal:0 WAYLAND_RUNTIME_DIR=/tmp ./scripts/local/up.sh
    ```

@@ -11,7 +11,28 @@ cd "${REPO_ROOT}"
 
 _set_default_environment()
 {
+    local default_qt_qpa_platform
+    local default_qt_quick_backend
+    local default_wayland_runtime_dir
+    local default_xdg_runtime_dir
+    local host_os
+
+    host_os="$(uname -s)"
+
+    if [ "${host_os}" = 'Darwin' ]; then
+        default_qt_qpa_platform='offscreen'
+        default_qt_quick_backend='software'
+        default_wayland_runtime_dir='/tmp'
+        default_xdg_runtime_dir='/tmp/orchidarium'
+    else
+        default_qt_qpa_platform='wayland'
+        default_qt_quick_backend=''
+        default_wayland_runtime_dir="/run/user/$(id -u)"
+        default_xdg_runtime_dir='/wayland-runtime'
+    fi
+
     export DEBUG="${DEBUG:-}"
+    export DISPLAY="${DISPLAY:-}"
     export DOCKER_INFLUXDB_INIT_ADMIN_TOKEN="${DOCKER_INFLUXDB_INIT_ADMIN_TOKEN:-}"
     export DOCKER_INFLUXDB_INIT_BUCKET="${DOCKER_INFLUXDB_INIT_BUCKET:-}"
     export DOCKER_INFLUXDB_INIT_MODE="${DOCKER_INFLUXDB_INIT_MODE:-}"
@@ -50,12 +71,15 @@ _set_default_environment()
     export ORCHIDARIUM_HOME="${ORCHIDARIUM_HOME:-/tmp/orchidarium}"
     export ORCHIDARIUM_RUNTIME_DIR="${ORCHIDARIUM_RUNTIME_DIR:-/tmp/orchidarium}"
     export ORCHIDARIUM_UID="${ORCHIDARIUM_UID:-$(id -u)}"
-    export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-wayland}"
+    export ORCHIDARIUM_XDG_RUNTIME_DIR="${ORCHIDARIUM_XDG_RUNTIME_DIR:-${default_xdg_runtime_dir}}"
+    export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-${default_qt_qpa_platform}}"
+    export QT_QUICK_BACKEND="${QT_QUICK_BACKEND:-${default_qt_quick_backend}}"
     export TMPDIR="${TMPDIR:-/tmp/orchidarium}"
+    export WAYLAND_CONTAINER_RUNTIME_DIR="${WAYLAND_CONTAINER_RUNTIME_DIR:-/wayland-runtime}"
     export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}"
+    export WAYLAND_RUNTIME_DIR="${WAYLAND_RUNTIME_DIR:-${default_wayland_runtime_dir}}"
     export XDG_CACHE_HOME="${XDG_CACHE_HOME:-/tmp/orchidarium/cache}"
     export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-/tmp/orchidarium/config}"
-    export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/${ORCHIDARIUM_UID}}"
     export TERM="${TERM:-}"
 }
 

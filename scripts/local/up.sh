@@ -70,6 +70,7 @@ _require_environment()
         ORCHIDARIUM_GID \
         ORCHIDARIUM_HOME \
         ORCHIDARIUM_UID \
+        ORCHIDARIUM_XDG_RUNTIME_DIR \
         INFLUXDB_DATABASE \
         INFLUXDB_HOST \
         INFLUXDB_ORG \
@@ -85,10 +86,11 @@ _require_environment()
         ORCHIDARIUM_RUNTIME_DIR \
         QT_QPA_PLATFORM \
         TMPDIR \
+        WAYLAND_CONTAINER_RUNTIME_DIR \
         WAYLAND_DISPLAY \
+        WAYLAND_RUNTIME_DIR \
         XDG_CACHE_HOME \
         XDG_CONFIG_HOME \
-        XDG_RUNTIME_DIR \
         TERM; do
         if [ -z "${!variable:-}" ]; then
             printf "ERROR: Expected %s to be set by scripts/.env.sh.\\n" "${variable}" >&2
@@ -97,19 +99,35 @@ _require_environment()
     done
 }
 
-_validate_wayland_environment()
+_validate_ui_display_environment()
 {
-    if [ "${QT_QPA_PLATFORM}" != "wayland" ]; then
-        return
-    fi
+    case "${QT_QPA_PLATFORM}" in
+        wayland)
+            ;;
+        xcb)
+            if [ -z "${DISPLAY}" ]; then
+                printf "ERROR: Expected DISPLAY to be set when QT_QPA_PLATFORM=xcb.\\n" >&2
+                exit 1
+            fi
 
-    if [ ! -d "${XDG_RUNTIME_DIR}" ]; then
-        printf "ERROR: Expected Wayland runtime directory %s to exist.\\n" "${XDG_RUNTIME_DIR}" >&2
+            return
+            ;;
+        offscreen)
+            return
+            ;;
+        *)
+            printf "ERROR: Unsupported QT_QPA_PLATFORM %s.\\n" "${QT_QPA_PLATFORM}" >&2
+            exit 1
+            ;;
+    esac
+
+    if [ ! -d "${WAYLAND_RUNTIME_DIR}" ]; then
+        printf "ERROR: Expected Wayland runtime directory %s to exist.\\n" "${WAYLAND_RUNTIME_DIR}" >&2
         exit 1
     fi
 
-    if [ ! -S "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" ]; then
-        printf "ERROR: Expected Wayland socket %s/%s to exist.\\n" "${XDG_RUNTIME_DIR}" "${WAYLAND_DISPLAY}" >&2
+    if [ ! -S "${WAYLAND_RUNTIME_DIR}/${WAYLAND_DISPLAY}" ]; then
+        printf "ERROR: Expected Wayland socket %s/%s to exist.\\n" "${WAYLAND_RUNTIME_DIR}" "${WAYLAND_DISPLAY}" >&2
         exit 1
     fi
 }
@@ -117,7 +135,7 @@ _validate_wayland_environment()
 _install_udev_rules
 _load_environment
 _require_environment
-_validate_wayland_environment
+_validate_ui_display_environment
 
 ./scripts/generate-test-self-signed-certs.sh
 
