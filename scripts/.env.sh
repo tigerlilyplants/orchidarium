@@ -11,6 +11,8 @@ INFLUXDB_ORG='orchidarium'
 INTERVAL='60'
 INFLUXDB_TOKEN="orchidarium"
 MAX_POINT_BACKLOG='1000'
+ORCHIDARIUM_RUNTIME_DIR='/tmp/orchidarium'
+TMPDIR="${ORCHIDARIUM_RUNTIME_DIR}"
 
 export DEBUG
 export HEALTHCHECK_PORT
@@ -20,6 +22,8 @@ export INFLUXDB_ORG
 export INTERVAL
 export INFLUXDB_TOKEN
 export MAX_POINT_BACKLOG
+export ORCHIDARIUM_RUNTIME_DIR
+export TMPDIR
 
 
 # InfluxDB initialization and Grafana datasource credentials.

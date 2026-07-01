@@ -141,6 +141,8 @@ services:
       - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
       - INTERVAL=${INTERVAL}
       - MAX_POINT_BACKLOG=${MAX_POINT_BACKLOG}
+      - ORCHIDARIUM_RUNTIME_DIR=${ORCHIDARIUM_RUNTIME_DIR}
+      - TMPDIR=${TMPDIR}
     ports:
       # Healthcheck is served on port 8085 on localhost.
       - '127.0.0.1:8085:8085'

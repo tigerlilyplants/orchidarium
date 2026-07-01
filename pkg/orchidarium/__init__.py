@@ -15,6 +15,8 @@ env: Dict[str, str]  = {
     'INFLUXDB_DATABASE':      os.getenv('INFLUXDB_DATABASE',                       'orchidarium'),
     'INTERVAL':               os.getenv('INTERVAL',                                         '60'),
     'MAX_POINT_BACKLOG':      os.getenv('MAX_POINT_BACKLOG',                              '1000'),
+    'ORCHIDARIUM_RUNTIME_DIR': os.getenv('ORCHIDARIUM_RUNTIME_DIR',          '/tmp/orchidarium'),
+    'TMPDIR':                 os.getenv('TMPDIR',                            '/tmp/orchidarium'),
     'HEALTHCHECK_PORT':       os.getenv('HEALTHCHECK_PORT',                               '8085')
 }
 

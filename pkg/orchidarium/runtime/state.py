@@ -17,7 +17,7 @@ from typing import Any
 
 
 _state_lock = Lock()
-_state_path = Path(tempfile.gettempdir()) / 'orchidarium' / 'runtime-state.json'
+_state_path = Path(os.getenv('ORCHIDARIUM_RUNTIME_DIR', '/tmp/orchidarium')) / 'runtime-state.json'
 
 
 def read_runtime_state() -> dict[str, Any]:

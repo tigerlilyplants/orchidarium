@@ -46,6 +46,8 @@ _set_default_environment()
     export MYSQL_PASSWORD="${MYSQL_PASSWORD:-}"
     export MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-}"
     export MYSQL_USER="${MYSQL_USER:-}"
+    export ORCHIDARIUM_RUNTIME_DIR="${ORCHIDARIUM_RUNTIME_DIR:-}"
+    export TMPDIR="${TMPDIR:-}"
     export TERM="${TERM:-}"
 }
 

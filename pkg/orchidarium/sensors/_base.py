@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 from abc import abstractmethod, ABC
-from typing import TYPE_CHECKING
+from typing import ClassVar, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from orchidarium.data.queue import DataQueue
@@ -14,6 +14,7 @@ log = logging.getLogger(__name__)
 
 
 class Sensor(ABC):
+    enabled: ClassVar[bool] = True
 
     def __init__(self, scale: Literal['F', 'C'] = 'F', default_temperature: float = 0.0) -> None:
         self.scale = scale

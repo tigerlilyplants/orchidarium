@@ -79,6 +79,8 @@ _require_environment()
         MYSQL_PASSWORD \
         MYSQL_ROOT_PASSWORD \
         MYSQL_USER \
+        ORCHIDARIUM_RUNTIME_DIR \
+        TMPDIR \
         TERM; do
         if [ -z "${!variable:-}" ]; then
             printf "ERROR: Expected %s to be set by scripts/.env.sh.\\n" "${variable}" >&2

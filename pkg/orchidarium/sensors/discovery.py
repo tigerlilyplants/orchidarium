@@ -12,7 +12,7 @@ def _sensor_types() -> Generator[type[Sensor]]:
     import orchidarium.sensors
 
     for _, obj in inspect.getmembers(orchidarium.sensors, inspect.isclass):
-        if issubclass(obj, Sensor) and obj is not Sensor:
+        if issubclass(obj, Sensor) and obj is not Sensor and obj.enabled:
             yield obj
 
 

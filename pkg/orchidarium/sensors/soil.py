@@ -20,6 +20,7 @@ log = logging.getLogger(__name__)
 
 
 class SoilSensor(Sensor):
+    enabled = False
 
     def collect(self) -> bool:
         self._collection = False
