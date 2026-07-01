@@ -13,10 +13,11 @@ from influxdb_client import InfluxDBClient, Point
 from influxdb_client.rest import ApiException
 from influxdb_client.client.write_api import SYNCHRONOUS
 from orchidarium import env
+from orchidarium.data.queue import MetricDatum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing import Any, List
+    from typing import Any
 
 
 __all__ = [
@@ -33,6 +34,7 @@ class InfluxDBPublisher(Publisher):
 
     def __init__(self):
         self._client: Any = None
+        self._write_api: Any = None
 
     def connect(self) -> bool:
         # Guard against re-opening the connection.
@@ -42,17 +44,18 @@ class InfluxDBPublisher(Publisher):
             for i in range(3):
                 try:
                     self._client = InfluxDBClient(
-                        url=env['INFLUXDB_HOST'],
+                        url=self._url,
                         org=env['INFLUXDB_ORG'],
-                        token=env['INFLUXDB_TOKEN'],
-                        database=env['INFLUXDB_DATABASE']
+                        token=env['INFLUXDB_TOKEN']
                     )
+                    self._write_api = self._client.write_api(write_options=SYNCHRONOUS)
                     break
                 except ApiException as e:
                     log.warning(f'Connection attempt {i + 1} / 3 to InfluxDB host "{env["INFLUXDB_HOST"]}" failed: {e}')
                     sleep(1)
             else:
                 log.error(f'Could not connect to InfluxDB host "{env["INFLUXDB_HOST"]}" after 3 attempts')
+                return False
 
             log.info(f'Successfully opened connection to InfluxDB host "{env["INFLUXDB_HOST"]}"')
         else:
@@ -65,16 +68,49 @@ class InfluxDBPublisher(Publisher):
         return self
 
     def __exit__(self, *args: Any) -> Any:
-        self._client.close()
+        if self._write_api:
+            self._write_api.close()
 
-    def submit(self, datum: Any) -> bool:
+        if self._client:
+            self._client.close()
+
+    @property
+    def _url(self) -> str:
+        if '://' in env['INFLUXDB_HOST']:
+            return env['INFLUXDB_HOST']
+
+        return f'http://{env["INFLUXDB_HOST"]}'
+
+    def submit(self, datum: MetricDatum) -> bool:
         """
-
+        Submit one metric datum to InfluxDB.
 
         Args:
-            datum (Any): _description_
+            datum (MetricDatum): metric datum to submit.
 
         Returns:
-            bool: _description_
+            bool: True when the write was accepted by the InfluxDB client.
         """
+        if not self._write_api and not self.connect():
+            return False
+
+        assert self._write_api is not None
+
+        self._write_api.write(
+            bucket=env['INFLUXDB_DATABASE'],
+            org=env['INFLUXDB_ORG'],
+            record=self._to_point(datum)
+        )
         return True
+
+    def _to_point(self, datum: MetricDatum) -> Point:
+        point = Point(datum.measurement)
+
+        for key, tag_value in datum.tags.items():
+            point.tag(key, tag_value)
+
+        for key, field_value in datum.fields.items():
+            point.field(key, field_value)
+
+        point.time(datum.timestamp)
+        return point

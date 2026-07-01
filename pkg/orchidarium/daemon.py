@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING
 from orchidarium import env
 from orchidarium.api import app
 from orchidarium.api.health import mark_thread_pool_failed, mark_thread_pool_healthy, mark_thread_pool_started
+from orchidarium.data import metric_queue
 from orchidarium.publishers.influxdb import InfluxDBPublisher
 from orchidarium.sensors import sensor_count, sensor_generator
 
@@ -82,7 +83,7 @@ def daemon() -> int:
                         pool.submit(
                             partial(
                                 sensor(),
-                                publisher
+                                metric_queue
                             )
                         )
                     )
@@ -108,6 +109,8 @@ def daemon() -> int:
                         _ret_code = 1
                         break
                 else:
+                    published_metrics = publisher.publish(metric_queue)
+                    log.debug(f'Published {published_metrics} metrics to InfluxDB')
                     mark_thread_pool_healthy(completed_workers=len(threads))
                     _ret_code = 0
 

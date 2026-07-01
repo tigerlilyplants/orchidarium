@@ -13,7 +13,7 @@ from orchidarium.lib.bus import InterfaceClaim, read
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from orchidarium.publishers import Publisher
+    from orchidarium.data.queue import DataQueue
 
 
 log = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ class SoilSensor(Sensor):
 
         return False
 
-    def publish(self, publisher: Publisher) -> bool:
+    def publish(self, data_queue: DataQueue) -> bool:
         ...
         self._publication = True
         return True

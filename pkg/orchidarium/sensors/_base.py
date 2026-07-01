@@ -6,7 +6,7 @@ from abc import abstractmethod, ABC
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from orchidarium.publishers._base import Publisher
+    from orchidarium.data.queue import DataQueue
     from typing import Literal
 
 
@@ -75,12 +75,12 @@ class Sensor(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def publish(self, publisher: Publisher) -> bool:
+    def publish(self, data_queue: DataQueue) -> bool:
         """
-        Publish data to a Publisher.
+        Publish collected data to a queue.
 
         Args:
-            publisher (Publisher): A Publisher that defines a 'publish_datapoint'-method.
+            data_queue (DataQueue): queue that accepts collected metric data.
 
         Raises:
             NotImplementedError: due to this being an abstract method.
@@ -90,12 +90,12 @@ class Sensor(ABC):
         """
         raise NotImplementedError
 
-    def __call__(self, publisher: Publisher) -> None:
+    def __call__(self, data_queue: DataQueue) -> None:
         """
-        Make Sensors callable, wherein data collection and publication is carried out.
+        Make Sensors callable, wherein data collection and enqueueing is carried out.
         """
         if not self.collect():
             raise RuntimeError(f'Failed to collect data for sensor "{self.__class__.__name__}"')
 
-        if not self.publish(publisher):
+        if not self.publish(data_queue):
             raise RuntimeError(f'Failed to publish data for sensor "{self.__class__.__name__}"')

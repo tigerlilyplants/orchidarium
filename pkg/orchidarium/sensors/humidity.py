@@ -5,12 +5,13 @@ import logging
 
 from usb.core import find
 from orchidarium import env
+from orchidarium.data.queue import MetricDatum
 from orchidarium.sensors import Sensor
 from orchidarium.lib.bus import InterfaceClaim, read
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from orchidarium.publishers import Publisher
+    from orchidarium.data.queue import DataQueue
 
 
 log = logging.getLogger(__name__)
@@ -71,7 +72,18 @@ class HumiditySensor(Sensor):
         self._collection = False
         return False
 
-    def publish(self, publisher: Publisher) -> bool:
-        ...
+    def publish(self, data_queue: DataQueue) -> bool:
+        data_queue.append(
+            MetricDatum(
+                measurement='environment',
+                tags={
+                    'sensor': self.__class__.__name__.lower().removesuffix('sensor'),
+                },
+                fields={
+                    'temperature_fahrenheit': self._TEMPERATURE_FAHRENHEIT,
+                    'relative_humidity': self._HUMIDITY,
+                }
+            )
+        )
         self._publication = True
         return True
