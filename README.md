@@ -12,7 +12,11 @@
   - [Development](#development)
     - [Docker Compose](#docker-compose)
 
-*Orchidarium* is a monitoring and control agent designed for terrariums that require precise environmental conditions, particularly high-humidity setups for mini and micro orchids. The project leverages key parameters such as humidity, nutrients, temperature, and lighting while enabling automated control to maintain stable habitat conditions. Its goal is to simplify the management of delicate terrarium ecosystems and help keep both plants and animals thriving with minimal manual intervention, replacing every point of contact with a configurable control loop.
+`orchidarium` is an extensible environmental control platform for maintaining closed or confined spaces, intended to run as the operating system for Tiger Lily Plants' Vesta control module (named after the planet at the center of the plot in *Scavengers Reign*).
+
+It is designed around custom control loops that combine data from off-the-shelf sensors with electrical, HVAC, lighting, and fluid-handling components. It can monitor environmental targets, track drift, schedule custom behavior, move and mix fluids, and measure energy usage, and many other derivative metrics as well.
+
+<!-- This project is Raspberry Pi / Python-centric, gluing together backgrounds / experience rooted in DevOps, , hardware, HVAC / environmental control, terrariums / vivariums / aquariums (freshwater and saltwater), and plants. -->
 
 See [BUILD.md](./BUILD.md) for terrarium build photos, sourced components, supported sensors, and notes on previous builds.
 
