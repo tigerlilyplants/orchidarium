@@ -3,6 +3,6 @@
 
 
 conda activate
-conda activate orchidarium
+conda activate orchids
 poetry env use "$(which python)"
 poetry install

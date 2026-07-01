@@ -5,7 +5,7 @@ import random
 import shutil
 import subprocess
 
-import make_tessellating_tube_tile as base
+import freecad.terrarium_wall.work.make_tessellating_tube_tile as base
 
 
 OUT_DIR = base.OUT_DIR

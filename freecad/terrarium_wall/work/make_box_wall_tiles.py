@@ -5,9 +5,9 @@ import random
 import shutil
 import subprocess
 
-import make_delaunay_eroded_tube_tile as tile
-import make_delaunay_eroded_tube_tile_low_profile as low
-import make_tessellating_tube_tile as base
+import freecad.terrarium_wall.work.make_delaunay_eroded_tube_tile as tile
+import freecad.terrarium_wall.work.make_delaunay_eroded_tube_tile_low_profile as low
+import freecad.terrarium_wall.work.make_tessellating_tube_tile as base
 
 
 INCH = 25.4

@@ -2,8 +2,8 @@
 import os
 import random
 
-import make_delaunay_eroded_tube_tile as tile
-import make_tessellating_tube_tile as base
+import freecad.terrarium_wall.work.make_delaunay_eroded_tube_tile as tile
+import freecad.terrarium_wall.work.make_tessellating_tube_tile as base
 
 
 LOW_SOCKET_DEPTH = 3.60
