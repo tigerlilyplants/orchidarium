@@ -6,18 +6,15 @@
   <img width="20%" src="./img/orchid.png" alt="orchid">
 </p>
 
-*Orchidarium* is a monitoring and control agent designed for terrariums that require precise environmental conditions, particularly high-humidity setups for mini and micro orchids. The project leverages key parameters such as humidity, nutrients, temperature, and lighting while enabling automated control to maintain stable habitat conditions. Its goal is to simplify the management of delicate terrarium ecosystems and help keep both plants and animals thriving with minimal manual intervention, replacing every point of contact with a configurable control loop.
-
-See [BUILD.md](./BUILD.md) for terrarium build photos, sourced components, supported sensors, and notes on previous builds.
-
-## Table of Contents
-
 - [Orchidarium 🪴](#orchidarium-)
-  - [Table of Contents](#table-of-contents)
   - [How it works by example](#how-it-works-by-example)
   - [Development](#development)
     - [Setup](#setup)
     - [Docker Compose](#docker-compose)
+
+*Orchidarium* is a monitoring and control agent designed for terrariums that require precise environmental conditions, particularly high-humidity setups for mini and micro orchids. The project leverages key parameters such as humidity, nutrients, temperature, and lighting while enabling automated control to maintain stable habitat conditions. Its goal is to simplify the management of delicate terrarium ecosystems and help keep both plants and animals thriving with minimal manual intervention, replacing every point of contact with a configurable control loop.
+
+See [BUILD.md](./BUILD.md) for terrarium build photos, sourced components, supported sensors, and notes on previous builds.
 
 ## How it works by example
 
