@@ -17,6 +17,7 @@ log = logging.getLogger(__name__)
 
 
 class HumiditySensor(Sensor):
+    enabled = False
 
     USB_VENDOR_ID: int = 0x0487
     USB_PRODUCT_ID: int = 0x0007
