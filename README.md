@@ -29,13 +29,13 @@ As I've progressed through my hobbies, from plants -> building terrariums -> fre
 4. Complex timing and scheduling of jobs is often impossible or a lot of work to configure and ends up getting done manually on a schedule.
 5. Reliable feedback about how the action that took place corrected a problem is nonexistent or difficult to retrieve / obtain.
 
-None of the products I've yet tried has really encapsulated what I wanted on every tank and shelf:
+The products I've yet tried have not accomplished the basic control flow and user experience that I want on every tank and shelf:
 
 - A centralized set of configurable, extendable and clear control loops across disciplines, with associated metrics and operations.
 - Dependable, complex timing for scheduled / recurring / one-off jobs.
 - Feedback about performance / general metrics.
 
-And moreover, I want it to be small.
+I also want it to be small.
 
 <!-- See [BUILD.md](./BUILD.md) for terrarium build photos, sourced components, supported sensors, and notes on previous builds. -->
 
