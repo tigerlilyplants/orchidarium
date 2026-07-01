@@ -14,6 +14,18 @@
   <img width="75%" src="img/40DB1760-932C-47B8-96B4-398F92D82769_1_105_c.jpeg" alt="build">
 </p>
 
+Here are a few recent photos from the hexagonal terrarium after several more plants settled in and started blooming.
+
+<p align="left" width="100%">
+  <img width="75%" src="./img/hexagonal-terrarium-2026-06.jpeg" alt="hexagonal terrarium with blooming plants">
+</p>
+
+<p align="left" width="100%">
+  <img width="24%" src="./img/utricularia-bloom-hexagonal-terrarium.jpeg" alt="Utricularia bloom in the hexagonal terrarium">
+  <img width="24%" src="./img/psygmorchis-pusilla-hexagonal-terrarium.jpeg" alt="Psygmorchis pusilla bloom in the hexagonal terrarium">
+  <img width="24%" src="./img/lepanthes-gargoyla-hexagonal-terrarium.jpeg" alt="Lepanthes gargoyla bloom in the hexagonal terrarium">
+</p>
+
 I've sourced a lot of components from various sites for this build.
 
 - Here's a [public Amazon list](https://www.amazon.com/hz/wishlist/ls/1ARZ5WK7A2QLO?ref_=wl_share) with most of the hardware I used to get this orchidarium off the ground.
