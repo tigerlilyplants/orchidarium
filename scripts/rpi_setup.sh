@@ -10,9 +10,9 @@ sudo apt-get install build-essential gdb lcov pkg-config \
     lzma-dev tk-dev uuid-dev zlib1g-dev libmpdec-dev libzstd-dev \
     inetutils-inetd i2c-tools
 
-# Install latest Python 3.12, which this package depends on (see pyproject.toml).
-pyenv install 3.12
-pyenv virtualenv 3.12 orchidarium
+# Install latest Python 3.13, which this package depends on (see pyproject.toml).
+pyenv install 3.13
+pyenv virtualenv 3.13 orchidarium
 pyenv activate orchidarium
 
 # Install poetry.
