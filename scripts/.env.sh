@@ -9,7 +9,7 @@ INFLUXDB_DATABASE='orchidarium'
 INFLUXDB_HOST='influxdb:8086'
 INFLUXDB_ORG='orchidarium'
 INTERVAL='60'
-INFLUXDB_TOKEN="$(pass show personal/orchidarium/influxdb/token)"
+INFLUXDB_TOKEN="orchidarium"
 
 export DEBUG
 export HEALTHCHECK_PORT
