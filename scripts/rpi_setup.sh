@@ -30,6 +30,7 @@ sudo apt-get install -y build-essential gdb lcov pkg-config \
 # Install latest Python 3.13, which this package depends on (see pyproject.toml).
 pyenv install 3.13
 pyenv virtualenv 3.13 orchidarium
+pyenv init --install
 pyenv activate orchidarium
 
 # Install poetry.
