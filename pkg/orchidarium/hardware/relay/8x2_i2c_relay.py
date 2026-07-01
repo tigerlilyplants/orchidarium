@@ -1,5 +1,5 @@
 """
-Control an I2C relay board.
+Control an 8x2 I2C relay board.
 """
 
 
@@ -40,7 +40,7 @@ CONFIGURATION_1 = 0x07
 
 class I2CRelay(BaseRelay, AbstractContextManager['I2CRelay']):
     """
-    Relay interface for a 16-channel I2C relay board.
+    Relay interface for an 8x2 I2C relay board.
     """
 
     def __init__(

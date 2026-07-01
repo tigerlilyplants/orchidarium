@@ -2,6 +2,7 @@ name: orchidarium
 services:
   grafana:
     image: grafana/grafana:9.5.20
+    container_name: grafana
     depends_on:
       influxdb:
         condition: service_started
@@ -67,6 +68,7 @@ services:
           cpus: '0.25'
   influxdb:
     image: influxdb:2.7.6
+    container_name: influxdb
     volumes:
       - influxdb-data:/data
     environment:
@@ -94,6 +96,7 @@ services:
           cpus: '0.25'
   mysql:
     image: mysql:9.5
+    container_name: mysql
     volumes:
       - mysql-data:/var/lib/mysql
     environment:
@@ -116,6 +119,7 @@ services:
       dockerfile: ./Dockerfile
       target: production
       pull: true
+    container_name: orchidarium
     depends_on:
       grafana:
         condition: service_started
