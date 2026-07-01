@@ -7,6 +7,7 @@
 </p>
 
 - [Orchidarium](#orchidarium)
+  - [Motivation](#motivation)
   - [Documentation](#documentation)
     - [Runtime Hierarchy](#runtime-hierarchy)
   - [Development](#development)
@@ -18,7 +19,25 @@ It is designed around custom control loops that combine data from off-the-shelf 
 
 <!-- This project is Raspberry Pi / Python-centric, gluing together backgrounds / experience rooted in DevOps, , hardware, HVAC / environmental control, terrariums / vivariums / aquariums (freshwater and saltwater), and plants. -->
 
-See [BUILD.md](./BUILD.md) for terrarium build photos, sourced components, supported sensors, and notes on previous builds.
+## Motivation
+
+As I've progressed through my hobbies, from plants -> building terrariums -> freshwater fish -> saltwater fish, I've noticed a trend of the following issues that the individual consumer markets address with different, oftentimes awkwardly composable, products (I surmise similar problems exist in other fields as well).
+
+1. Maintaining and monitoring adequate environmental conditions in confined spaces, whether liquid- or gas / atmosphere-based, is hard, and often requires different controllers and sensors to achieve long-term stability.
+2. Dosing solids and liquids at the right times and in the right quantities could mean life or death for the occupants of the confined space.
+3. Changing values too quickly can mean life or death of the occupants.
+4. Complex timing and scheduling of jobs is often impossible or a lot of work to configure and ends up getting done manually on a schedule.
+5. Reliable feedback about how the action that took place corrected a problem is nonexistent or difficult to retrieve / obtain.
+
+None of the products I've yet tried has really encapsulated what I wanted on every tank and shelf:
+
+- A centralized set of configurable, extendable and clear control loops across disciplines, with associated metrics and operations.
+- Dependable, complex timing for scheduled / recurring / one-off jobs.
+- Feedback about performance / general metrics.
+
+And moreover, I want it to be small.
+
+<!-- See [BUILD.md](./BUILD.md) for terrarium build photos, sourced components, supported sensors, and notes on previous builds. -->
 
 ## Documentation
 
