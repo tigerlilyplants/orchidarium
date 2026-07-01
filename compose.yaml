@@ -132,9 +132,16 @@ services:
       # udev on /dev/bus/usb type devtmpfs (ro,nosuid,relatime,size=32847200k,nr_inodes=8211800,mode=755,inode64)
       - /dev/gpiomem:/dev/gpiomem:ro
       - /dev/bus/usb:/dev/bus/usb:ro
+      # Wayland display socket from the host desktop session.
+      - type: bind
+        source: ${XDG_RUNTIME_DIR}
+        target: ${XDG_RUNTIME_DIR}
+        bind:
+          create_host_path: false
     environment:
       - DEBUG=${DEBUG}
       - HEALTHCHECK_PORT=${HEALTHCHECK_PORT}
+      - HOME=${ORCHIDARIUM_HOME}
       - INFLUXDB_DATABASE=${INFLUXDB_DATABASE}
       - INFLUXDB_HOST=${INFLUXDB_HOST}
       - INFLUXDB_ORG=${INFLUXDB_ORG}
@@ -142,7 +149,12 @@ services:
       - INTERVAL=${INTERVAL}
       - MAX_POINT_BACKLOG=${MAX_POINT_BACKLOG}
       - ORCHIDARIUM_RUNTIME_DIR=${ORCHIDARIUM_RUNTIME_DIR}
+      - QT_QPA_PLATFORM=${QT_QPA_PLATFORM}
       - TMPDIR=${TMPDIR}
+      - WAYLAND_DISPLAY=${WAYLAND_DISPLAY}
+      - XDG_CACHE_HOME=${XDG_CACHE_HOME}
+      - XDG_CONFIG_HOME=${XDG_CONFIG_HOME}
+      - XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR}
     ports:
       # Healthcheck is served on port 8085 on localhost.
       - '127.0.0.1:8085:8085'
@@ -154,7 +166,7 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-    user: '10001'
+    user: '${ORCHIDARIUM_UID}:${ORCHIDARIUM_GID}'
     deploy:
       resources:
         limits:
@@ -166,7 +178,7 @@ services:
     read_only: true
     tmpfs:
       # Runtime API snapshots shared between child processes.
-      - /tmp/orchidarium:size=4m,uid=10001,gid=10001,mode=700
+      - /tmp/orchidarium:size=4m,uid=${ORCHIDARIUM_UID},gid=${ORCHIDARIUM_GID},mode=700
 volumes:
   mysql-data:
     driver: local

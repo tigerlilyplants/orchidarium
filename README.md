@@ -94,3 +94,13 @@ Stop the local stack. This runs `docker compose down`, removes the Orchidarium u
    ```text
    ./scripts/local/down.sh
    ```
+
+#### Wayland Display
+
+The UI process uses Wayland by default. [`scripts/.env.sh`](./scripts/.env.sh) sets `QT_QPA_PLATFORM=wayland`, points `XDG_RUNTIME_DIR` at the current user's runtime directory, and runs the Orchidarium container as the current UID / GID so the Wayland socket can be opened.
+
+Run `./scripts/local/up.sh` from the same desktop user that owns the Wayland session. If the compositor uses a different socket name, set it before startup:
+
+   ```text
+   WAYLAND_DISPLAY=wayland-1 ./scripts/local/up.sh
+   ```

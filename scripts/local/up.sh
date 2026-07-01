@@ -67,6 +67,9 @@ _require_environment()
         GF_USERS_VIEWERS_CAN_SAVE_DASHBOARDS \
         GF_USERS_VIEWERS_CAN_SAVE_TEMPORARY \
         HEALTHCHECK_PORT \
+        ORCHIDARIUM_GID \
+        ORCHIDARIUM_HOME \
+        ORCHIDARIUM_UID \
         INFLUXDB_DATABASE \
         INFLUXDB_HOST \
         INFLUXDB_ORG \
@@ -80,7 +83,12 @@ _require_environment()
         MYSQL_ROOT_PASSWORD \
         MYSQL_USER \
         ORCHIDARIUM_RUNTIME_DIR \
+        QT_QPA_PLATFORM \
         TMPDIR \
+        WAYLAND_DISPLAY \
+        XDG_CACHE_HOME \
+        XDG_CONFIG_HOME \
+        XDG_RUNTIME_DIR \
         TERM; do
         if [ -z "${!variable:-}" ]; then
             printf "ERROR: Expected %s to be set by scripts/.env.sh.\\n" "${variable}" >&2
@@ -89,9 +97,27 @@ _require_environment()
     done
 }
 
+_validate_wayland_environment()
+{
+    if [ "${QT_QPA_PLATFORM}" != "wayland" ]; then
+        return
+    fi
+
+    if [ ! -d "${XDG_RUNTIME_DIR}" ]; then
+        printf "ERROR: Expected Wayland runtime directory %s to exist.\\n" "${XDG_RUNTIME_DIR}" >&2
+        exit 1
+    fi
+
+    if [ ! -S "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" ]; then
+        printf "ERROR: Expected Wayland socket %s/%s to exist.\\n" "${XDG_RUNTIME_DIR}" "${WAYLAND_DISPLAY}" >&2
+        exit 1
+    fi
+}
+
 _install_udev_rules
 _load_environment
 _require_environment
+_validate_wayland_environment
 
 ./scripts/generate-test-self-signed-certs.sh
 

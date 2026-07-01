@@ -31,6 +31,8 @@ RUN apt update \
         libice6 \
         libopengl0 \
         libsm6 \
+        libwayland-cursor0 \
+        libwayland-egl1 \
         libx11-6 \
         libx11-xcb1 \
         libxcb-cursor0 \
@@ -65,12 +67,13 @@ RUN groupadd orchidarium \
 
 WORKDIR /opt/orchidarium
 
-# Ensure that the 'orchidarium' user owns the directory and set up a Git hook that prevents the user from pushing.
-RUN chown -R orchidarium:orchidarium .
+# Ensure that the 'orchidarium' user owns the working directories.
+RUN mkdir -p /wayland-runtime \
+    && chown -R orchidarium:orchidarium . /wayland-runtime
 
 USER 10001
 
-COPY --chown=orchidarium:orchidarium --chmod=550 bin/cmd.sh /cmd.sh
+COPY --chown=orchidarium:orchidarium --chmod=555 bin/cmd.sh /cmd.sh
 
 ENTRYPOINT ["/tini", "--"]
 CMD [ "/cmd.sh" ]

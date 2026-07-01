@@ -46,8 +46,16 @@ _set_default_environment()
     export MYSQL_PASSWORD="${MYSQL_PASSWORD:-}"
     export MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-}"
     export MYSQL_USER="${MYSQL_USER:-}"
-    export ORCHIDARIUM_RUNTIME_DIR="${ORCHIDARIUM_RUNTIME_DIR:-}"
-    export TMPDIR="${TMPDIR:-}"
+    export ORCHIDARIUM_GID="${ORCHIDARIUM_GID:-$(id -g)}"
+    export ORCHIDARIUM_HOME="${ORCHIDARIUM_HOME:-/tmp/orchidarium}"
+    export ORCHIDARIUM_RUNTIME_DIR="${ORCHIDARIUM_RUNTIME_DIR:-/tmp/orchidarium}"
+    export ORCHIDARIUM_UID="${ORCHIDARIUM_UID:-$(id -u)}"
+    export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-wayland}"
+    export TMPDIR="${TMPDIR:-/tmp/orchidarium}"
+    export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}"
+    export XDG_CACHE_HOME="${XDG_CACHE_HOME:-/tmp/orchidarium/cache}"
+    export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-/tmp/orchidarium/config}"
+    export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/${ORCHIDARIUM_UID}}"
     export TERM="${TERM:-}"
 }
 
