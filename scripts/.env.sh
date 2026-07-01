@@ -1,24 +1,92 @@
 #! /usr/bin/env bash
-# Populate a shell with the secrets required to execute the Docker compose file.
+# Populate the environment required by Docker Compose and Orchidarium.
 
 
+# Orchidarium runtime.
+DEBUG='true'
+HEALTHCHECK_PORT='8085'
+INFLUXDB_DATABASE='orchidarium'
+INFLUXDB_HOST='influxdb:8086'
+INFLUXDB_ORG='orchidarium'
+INTERVAL='60'
 INFLUXDB_TOKEN="$(pass show personal/orchidarium/influxdb/token)"
+
+export DEBUG
+export HEALTHCHECK_PORT
+export INFLUXDB_DATABASE
+export INFLUXDB_HOST
+export INFLUXDB_ORG
+export INTERVAL
 export INFLUXDB_TOKEN
 
-INFLUXDB_USERNAME="$(pass show personal/orchidarium/influxdb/username)"
+
+# InfluxDB initialization and Grafana datasource credentials.
+INFLUXDB_USERNAME=orchidarium
+INFLUXDB_PASSWORD=orchidarium
+DOCKER_INFLUXDB_INIT_ADMIN_TOKEN="${INFLUXDB_TOKEN}"
+DOCKER_INFLUXDB_INIT_BUCKET="${INFLUXDB_DATABASE}"
+DOCKER_INFLUXDB_INIT_MODE='setup'
+DOCKER_INFLUXDB_INIT_ORG="${INFLUXDB_ORG}"
+DOCKER_INFLUXDB_INIT_PASSWORD="${INFLUXDB_PASSWORD}"
+DOCKER_INFLUXDB_INIT_USERNAME="${INFLUXDB_USERNAME}"
+
 export INFLUXDB_USERNAME
-
-INFLUXDB_PASSWORD="$(pass show personal/orchidarium/influxdb/password)"
 export INFLUXDB_PASSWORD
+export DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+export DOCKER_INFLUXDB_INIT_BUCKET
+export DOCKER_INFLUXDB_INIT_MODE
+export DOCKER_INFLUXDB_INIT_ORG
+export DOCKER_INFLUXDB_INIT_PASSWORD
+export DOCKER_INFLUXDB_INIT_USERNAME
 
-GF_ADMIN_PASSWORD="$(pass show personal/orchidarium/grafana/password)"
-export GF_ADMIN_PASSWORD
 
-GF_ADMIN_USER="$(pass show personal/orchidarium/grafana/username)"
-export GF_ADMIN_USER
+# Grafana.
+GF_DATABASE_USER=orchidarium
+GF_DATABASE_PASSWORD=orchidarium
+GF_INSTALL_PLUGINS='grafana-clock-panel,grafana-polystat-panel'
+GF_PATHS_CONFIG='/etc/grafana/grafana.ini'
+GF_PATHS_DATA='/var/lib/grafana'
+GF_SECURITY_ADMIN_PASSWORD=orchidarium
+GF_SECURITY_ADMIN_USER=orchidarium
+GF_USERS_ALLOW_SIGN_UP='false'
+GF_USERS_AUTO_ASSIGN_ORG='true'
+GF_USERS_AUTO_ASSIGN_ORG_ROLE='Viewer'
+GF_USERS_AUTO_ASSIGN_ROLE='Viewer'
+GF_USERS_DEFAULT_THEME='light'
+GF_USERS_VIEWERS_CAN_EDIT='true'
+GF_USERS_VIEWERS_CAN_SAVE_DASHBOARDS='true'
+GF_USERS_VIEWERS_CAN_SAVE_TEMPORARY='true'
 
-GRAFANA_MYSQL_DATABASE_USERNAME="$(pass show personal/orchidarium/mysql/username)"
-export GRAFANA_MYSQL_DATABASE_USERNAME
+export GF_DATABASE_USER
+export GF_DATABASE_PASSWORD
+export GF_INSTALL_PLUGINS
+export GF_PATHS_CONFIG
+export GF_PATHS_DATA
+export GF_SECURITY_ADMIN_PASSWORD
+export GF_SECURITY_ADMIN_USER
+export GF_USERS_ALLOW_SIGN_UP
+export GF_USERS_AUTO_ASSIGN_ORG
+export GF_USERS_AUTO_ASSIGN_ORG_ROLE
+export GF_USERS_AUTO_ASSIGN_ROLE
+export GF_USERS_DEFAULT_THEME
+export GF_USERS_VIEWERS_CAN_EDIT
+export GF_USERS_VIEWERS_CAN_SAVE_DASHBOARDS
+export GF_USERS_VIEWERS_CAN_SAVE_TEMPORARY
 
-GRAFANA_MYSQL_DATABASE_PASSWORD="$(pass show personal/orchidarium/mysql/password)"
-export GRAFANA_MYSQL_DATABASE_PASSWORD
+
+# MySQL-backed Grafana storage.
+MYSQL_DATABASE='orchidarium'
+MYSQL_PASSWORD="${GF_DATABASE_PASSWORD}"
+MYSQL_ROOT_PASSWORD="${GF_DATABASE_PASSWORD}"
+MYSQL_USER="${GF_DATABASE_USER}"
+
+export MYSQL_DATABASE
+export MYSQL_PASSWORD
+export MYSQL_ROOT_PASSWORD
+export MYSQL_USER
+
+
+# Container shell defaults.
+TERM='linux'
+
+export TERM
