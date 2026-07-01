@@ -31,6 +31,11 @@ sudo apt-get install -y build-essential gdb lcov pkg-config \
 yes | pyenv install 3.13
 yes | pyenv virtualenv 3.13 orchidarium
 pyenv init --install
+
+# Append the pyenv root to $PATH.
+PATH="$(pyenv root)"/shims:"$PATH"
+export PATH
+
 pyenv activate orchidarium
 
 # Install poetry.
