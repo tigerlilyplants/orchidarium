@@ -2,7 +2,6 @@ name: orchidarium
 services:
   grafana:
     image: grafana/grafana:9.5.20
-    container_name: grafana
     depends_on:
       influxdb:
         condition: service_started
@@ -24,7 +23,7 @@ services:
           create_host_path: false
       # Config
       - type: bind
-        source: ./grafana/config.ini
+        source: ./config/grafana/config.ini
         target: /etc/grafana/grafana.ini
         read_only: true
         bind:
@@ -54,7 +53,7 @@ services:
     restart: unless-stopped
     healthcheck:
       test: >
-        curl -sL http://localhost:3000
+        curl -skL https://localhost:3000/api/health
       interval: 3s
       retries: 10
       start_period: 5s
@@ -67,10 +66,8 @@ services:
           memory: 1G
         reservations:
           cpus: '0.25'
-          memory: 1G
   influxdb:
     image: influxdb:2.7.6
-    container_name: influxdb
     volumes:
       - influxdb-data:/data
     environment:
@@ -97,10 +94,9 @@ services:
           memory: 1G
         reservations:
           cpus: '0.25'
-          memory: 1G
+          # memory reservations are purposely left out here because it will show up as a soft memory limit, and influxdb does not support this.
   mysql:
     image: mysql:9.5
-    container_name: mysql
     volumes:
       - mysql-data:/var/lib/mysql
     environment:
@@ -123,7 +119,6 @@ services:
       dockerfile: ./Dockerfile
       target: production
       pull: true
-    container_name: orchidarium
     depends_on:
       grafana:
         condition: service_started
@@ -162,7 +157,6 @@ services:
           memory: 1G
         reservations:
           cpus: '1.0'
-          memory: 1G
     platform: linux/arm64
     privileged: true
     read_only: true
