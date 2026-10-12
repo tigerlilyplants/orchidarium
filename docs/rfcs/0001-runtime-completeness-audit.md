@@ -8,6 +8,32 @@
 - Accountable owner: Unassigned; maintainers must nominate runtime, persistence, controls, and validation owners
 - Decision requested: Accept the gap inventory and staged acceptance gates; resolve the open contracts before implementing control behavior
 
+## Table of contents
+
+- [Client overview](#client-overview)
+- [Scope, method, and limitations](#scope-method-and-limitations)
+- [Runtime and ownership map](#runtime-and-ownership-map)
+- [Gap register and technical handoff](#gap-register-and-technical-handoff)
+  - [G01 — P1: Complete the child lifecycle contract](#g01--p1-complete-the-child-lifecycle-contract)
+  - [G02 — P1: Shared snapshot replacement is not a cross-process transaction](#g02--p1-shared-snapshot-replacement-is-not-a-cross-process-transaction)
+  - [G03 — P1: Readiness can remain true for a stalled metrics cycle](#g03--p1-readiness-can-remain-true-for-a-stalled-metrics-cycle)
+  - [G04 — P0: Hardware and atmospheric management are scaffolds](#g04--p0-hardware-and-atmospheric-management-are-scaffolds)
+  - [G05 — P0: Relay UI has no command/acknowledgment path](#g05--p0-relay-ui-has-no-commandacknowledgment-path)
+  - [G06 — P1: InfluxDB lifecycle has partial-initialization and cleanup holes](#g06--p1-influxdb-lifecycle-has-partial-initialization-and-cleanup-holes)
+  - [G07 — P1: Queue pressure and zero-sensor failure paths lack a complete policy](#g07--p1-queue-pressure-and-zero-sensor-failure-paths-lack-a-complete-policy)
+  - [G08 — P1 before live telemetry: Sensor validity, units and bounded I/O](#g08--p1-before-live-telemetry-sensor-validity-units-and-bounded-io)
+  - [G09 — P2: Define database bootstrap and schema/retention responsibilities](#g09--p2-define-database-bootstrap-and-schemaretention-responsibilities)
+  - [G10 — P1 release gate: Establish reproducible runtime validation](#g10--p1-release-gate-establish-reproducible-runtime-validation)
+- [Evidence from this audit](#evidence-from-this-audit)
+- [Phased roadmap and SemVer-adjacent acceptance checklist](#phased-roadmap-and-semver-adjacent-acceptance-checklist)
+  - [Phase A — 0.0.2 candidate: Runtime truth and bounded lifecycle](#phase-a--002-candidate-runtime-truth-and-bounded-lifecycle)
+  - [Phase B — 0.1.0 candidate: Reliable telemetry and storage contract](#phase-b--010-candidate-reliable-telemetry-and-storage-contract)
+  - [Phase C — 0.2.0 candidate: Simulated controls and acknowledged UI](#phase-c--020-candidate-simulated-controls-and-acknowledged-ui)
+  - [Phase D — 0.3.0 pilot candidate; eventual 1.0 gate](#phase-d--030-pilot-candidate-eventual-10-gate)
+- [Alternatives and open decisions](#alternatives-and-open-decisions)
+- [Related RFCs](#related-rfcs)
+- [Review and completion criteria](#review-and-completion-criteria)
+
 ## Client overview
 
 Orchidarium has a functioning architectural skeleton for collecting metrics, publishing to InfluxDB, serving health endpoints, and displaying a UI. It is not yet a complete environmental controller. The hardware child currently publishes only a heartbeat. Relay controls change UI state, with no command/acknowledgment path to hardware, and the only enabled sensor is a random-value mock.
